@@ -11,7 +11,7 @@ export default function AdminEmployeesPage() {
   const [q, setQ] = useState("");
   const [dept, setDept] = useState("");
   const [role, setRole] = useState("");
-  const { employees, loading } = useEmployees({ isActive: true });
+  const { employees, loading } = useEmployees();
   const [draft, setDraft] = useState<Omit<StoreEmployee, "id">>({ name: "", email: "", department: "", role: "employee", manager: "" });
   const [password, setPassword] = useState("");
   const [creating, setCreating] = useState(false);
@@ -138,6 +138,7 @@ export default function AdminEmployeesPage() {
                     <td className="border-b border-slate-100 px-3 py-2">
                       <div className="flex flex-wrap gap-2">
                         <a className="rounded border border-slate-200 px-2 py-1" href={`/admin/employees?id=${e.id}`}>View</a>
+                        <a className="rounded border border-slate-200 px-2 py-1" href={`/admin/employees/documents/${e.id}`}>Documents</a>
                         <button className="rounded border border-slate-200 px-2 py-1" onClick={() => alert('Edit not yet wired to Firestore in this view.')}>Edit</button>
                         <button className="rounded border border-slate-200 px-2 py-1 text-rose-600" onClick={() => alert('Delete not yet wired to Firestore in this view.')}>Delete</button>
                       </div>

@@ -90,6 +90,20 @@ export async function updateEmployee(employeeDocId: string, updates: Partial<Emp
   return { id: ref.id, ...(snap.data() as any) } as Employee;
 }
 
+/** Adjust leave balance by employee email (lowercase match). delta should be negative to deduct. */
+export async function adjustLeaveBalanceByEmail(email: string, type: 'casual' | 'sick' | 'privilege', delta: number) {
+  const col = collection(db, 'employees');
+  const qy = query(col, where('email', '==', email.toLowerCase()), limit(1));
+  const snaps = await getDocs(qy);
+  const docSnap = snaps.docs[0];
+  if (!docSnap) return;
+  const ref = doc(db, 'employees', docSnap.id);
+  const key = `leaveBalance.${type}` as any;
+  const current = (docSnap.data() as any)?.leaveBalance?.[type] ?? 0;
+  const next = Math.max(0, current + delta);
+  await updateDoc(ref, { [key]: next, updatedAt: serverTimestamp() });
+}
+
 export async function deleteEmployee(employeeDocId: string, soft = true) {
   const ref = doc(db, 'employees', employeeDocId);
   if (soft) {

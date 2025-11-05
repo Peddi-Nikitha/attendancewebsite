@@ -3,12 +3,14 @@ import {
   collection,
   doc,
   getDocs,
+  getDoc,
   onSnapshot,
   query,
   orderBy,
   where,
   limit,
   addDoc,
+  updateDoc,
   serverTimestamp,
   Timestamp,
   Unsubscribe,
@@ -210,4 +212,61 @@ export function listenEmployeeLeaveRequests(
     }
   };
 }
+
+/** Admin: listen to all leave requests (optionally by status) */
+export function listenAllLeaveRequests(
+  callback: (docs: (LeaveRequestDoc & { id: string })[]) => void,
+  errorCallback?: (error: Error) => void,
+  limitCount: number = 200,
+  statusFilter?: LeaveStatus
+): Unsubscribe {
+  const colRef = collection(db, COLLECTION_NAME);
+  const qWithOrder = statusFilter
+    ? query(colRef, where("status", "==", statusFilter), orderBy("createdAt", "desc"), limit(limitCount))
+    : query(colRef, orderBy("createdAt", "desc"), limit(limitCount));
+
+  let fallbackUnsub: Unsubscribe | null = null;
+  let usingFallback = false;
+
+  const unsub = onSnapshot(
+    qWithOrder,
+    (snap) => {
+      const docs = snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) })) as any[];
+      callback(docs);
+    },
+    (error: any) => {
+      if (error?.code === "failed-precondition" && error?.message?.includes("index")) {
+        if (!usingFallback) {
+          usingFallback = true;
+          const qFallback = statusFilter ? query(colRef, where("status", "==", statusFilter)) : query(colRef);
+          fallbackUnsub = onSnapshot(
+            qFallback,
+            (snap2) => {
+              const docs = snap2.docs.map((d) => ({ id: d.id, ...(d.data() as any) })) as any[];
+              docs.sort((a, b) => toMillisSafe(b.createdAt) - toMillisSafe(a.createdAt));
+              callback(docs.slice(0, limitCount));
+            },
+            (fbErr) => {
+              const err = fbErr instanceof Error ? fbErr : new Error("Failed to load leaves");
+              if (errorCallback) errorCallback(err); else callback([]);
+            }
+          );
+        }
+        if (errorCallback) errorCallback(error);
+      } else {
+        const err = error instanceof Error ? error : new Error("Failed to load leaves");
+        if (errorCallback) errorCallback(err); else callback([]);
+      }
+    }
+  );
+
+  return () => { unsub(); if (fallbackUnsub) fallbackUnsub(); };
+}
+
+/** Update leave status */
+export async function updateLeaveStatus(id: string, status: LeaveStatus): Promise<void> {
+  const ref = doc(db, COLLECTION_NAME, id);
+  await updateDoc(ref, { status, updatedAt: serverTimestamp() });
+}
+
 
