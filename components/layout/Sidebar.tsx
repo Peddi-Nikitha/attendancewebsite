@@ -9,6 +9,7 @@ import {
 	Leaf,
 	Wallet,
 	UserRound,
+	Briefcase,
 } from "lucide-react";
 
 const nav = [
@@ -19,6 +20,7 @@ const nav = [
 	{ href: "/employee/leave", label: "Leave", icon: Leaf },
 	{ href: "/employee/payslips", label: "Payslips", icon: Wallet },
 	{ href: "/employee/profile", label: "Profile", icon: UserRound },
+	{ href: "/employee/projects", label: "My Projects", icon: Briefcase },
 ];
 
 export default function Sidebar() {

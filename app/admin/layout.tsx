@@ -12,6 +12,7 @@ const nav = [
   { href: "/admin/payslips", label: "Payslips", icon: "💰" },
   { href: "/admin/holidays", label: "Holidays", icon: "🎉" },
   { href: "/admin/reports", label: "Reports", icon: "📊" },
+  { href: "/admin/projects", label: "Projects", icon: "🧩" },
   { href: "/admin/settings", label: "Settings", icon: "⚙️" },
 ];
 
