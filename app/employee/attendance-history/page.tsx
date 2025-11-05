@@ -198,6 +198,56 @@ export default function EmployeeAttendanceHistoryPage() {
     return counts;
   }, [leaveRequests, monthStart, monthEnd]);
 
+  // Build daily hours for the current month from attendance (check-in/check-out)
+  const dailyHours = useMemo(() => {
+    const hoursByDate = new Map<string, number>();
+    if (attendanceRecords) {
+      for (const r of attendanceRecords) {
+        // Only consider records within current month
+        const d = new Date(r.date + "T00:00:00");
+        if (d < monthStart || d > monthEnd) continue;
+
+        let hours = r.totalHours;
+        if ((hours === undefined || hours === null) && r.checkIn?.timestamp && r.checkOut?.timestamp) {
+          try {
+            const inMs = r.checkIn.timestamp.toMillis();
+            const outMs = r.checkOut.timestamp.toMillis();
+            const diffHours = (outMs - inMs) / (1000 * 60 * 60);
+            hours = Math.max(0, Number(diffHours.toFixed(2)));
+          } catch {}
+        }
+        if (typeof hours === 'number') {
+          hoursByDate.set(r.date, hours);
+        }
+      }
+    }
+
+    // Create ordered list for each working day of the month
+    const results: Array<{ date: string; label: string; hours: number }> = [];
+    const cursor = new Date(monthStart);
+    while (cursor <= monthEnd) {
+      const weekday = cursor.getDay();
+      const dateStr = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, "0")}-${String(cursor.getDate()).padStart(2, "0")}`;
+      if (weekday !== 0 && weekday !== 6) {
+        results.push({
+          date: dateStr,
+          label: String(cursor.getDate()),
+          hours: hoursByDate.get(dateStr) || 0,
+        });
+      }
+      cursor.setDate(cursor.getDate() + 1);
+    }
+
+    return results;
+  }, [attendanceRecords, monthStart, monthEnd]);
+
+  const maxHours = useMemo(() => {
+    let m = 0;
+    for (const d of dailyHours) m = Math.max(m, d.hours);
+    // Use at least an 8h scale for readability
+    return Math.max(8, Math.ceil(m));
+  }, [dailyHours]);
+
   return (
     <div className="space-y-6">
       <div>
@@ -259,6 +309,39 @@ export default function EmployeeAttendanceHistoryPage() {
                     )}
                   </div>
                 ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader title="Daily Hours (This Month)" subtitle="Working days only" />
+          <CardContent>
+            {isLoading ? (
+              <div className="py-8 text-center text-sm text-slate-500">Loading chart...</div>
+            ) : dailyHours.length === 0 ? (
+              <div className="text-sm text-slate-500">No hours tracked yet.</div>
+            ) : (
+              <div className="flex h-48 items-end gap-2">
+                {dailyHours.map((d) => {
+                  const h = Math.min(1, d.hours / maxHours);
+                  return (
+                    <div key={d.date} className="flex h-full w-3 flex-col items-center justify-end">
+                      <div
+                        className={`w-full rounded-t bg-sky-500 ${d.hours === 0 ? 'opacity-30' : ''}`}
+                        style={{ height: `${Math.round(h * 100)}%` }}
+                        title={`${d.hours}h on ${d.date}`}
+                      />
+                      <div className="mt-1 text-[10px] leading-none text-slate-500">{d.label}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            {!isLoading && dailyHours.length > 0 && (
+              <div className="mt-2 flex items-center justify-between text-[10px] text-slate-500">
+                <span>0h</span>
+                <span>{maxHours}h</span>
               </div>
             )}
           </CardContent>

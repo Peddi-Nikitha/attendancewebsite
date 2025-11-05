@@ -6,17 +6,9 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
 import { CalendarDays, Clock8, Leaf, MapPin } from "lucide-react";
-import { useAttendanceToday, useCheckIn, useCheckOut } from "@/lib/firebase/hooks/useAttendance";
+import { useAttendanceToday, useCheckIn, useCheckOut, useEmployeeAttendanceRecords } from "@/lib/firebase/hooks/useAttendance";
 
-const weeklyData = [
-  { name: "Mon", hours: 8 },
-  { name: "Tue", hours: 7.5 },
-  { name: "Wed", hours: 8 },
-  { name: "Thu", hours: 6.5 },
-  { name: "Fri", hours: 8 },
-  { name: "Sat", hours: 0 },
-  { name: "Sun", hours: 0 },
-];
+const weekdayNamesMonStart = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
 
 export default function EmployeeDashboardPage() {
   const router = useRouter();
@@ -32,6 +24,7 @@ export default function EmployeeDashboardPage() {
   
   const userId = currentUser?.email; // Use email as unique identifier
   const { data, checkedIn, loading: attendanceLoading } = useAttendanceToday(userId);
+  const { data: recentRecords } = useEmployeeAttendanceRecords(userId, 14);
   const { mutate: doCheckIn, loading: checkInLoading, error: checkInError } = useCheckIn();
   const { mutate: doCheckOut, loading: checkOutLoading, error: checkOutError } = useCheckOut();
   const [timestamp, setTimestamp] = useState<string>("");
@@ -123,6 +116,50 @@ export default function EmployeeDashboardPage() {
     if (checkedIn && runningHours) return runningHours;
     return "";
   })();
+
+  // Build dynamic weekly hours for current week (Mon -> Sun)
+  const weeklyData = useMemo(() => {
+    const today = new Date();
+    const day = today.getDay(); // 0=Sun..6=Sat
+    const mondayOffset = (day + 6) % 7; // days since Monday
+    const monday = new Date(today);
+    monday.setHours(0,0,0,0);
+    monday.setDate(today.getDate() - mondayOffset);
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+
+    // Pre-fill structure for Mon..Sun
+    const days: Array<{ key: string; name: string; hours: number }> = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(monday);
+      d.setDate(monday.getDate() + i);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+      days.push({ key, name: weekdayNamesMonStart[i], hours: 0 });
+    }
+
+    const indexByKey = new Map(days.map((d, i) => [d.key, i] as const));
+
+    if (recentRecords) {
+      for (const r of recentRecords) {
+        const i = indexByKey.get(r.date);
+        if (i === undefined) continue; // only this week
+        let hours = r.totalHours;
+        if ((hours === undefined || hours === null) && r.checkIn?.timestamp && r.checkOut?.timestamp) {
+          try {
+            const inMs = r.checkIn.timestamp.toMillis();
+            const outMs = r.checkOut.timestamp.toMillis();
+            const diff = (outMs - inMs) / (1000 * 60 * 60);
+            hours = Math.max(0, Number(diff.toFixed(2)));
+          } catch {}
+        }
+        if (typeof hours === "number") {
+          days[i].hours = hours;
+        }
+      }
+    }
+
+    return days.map(({ name, hours }) => ({ name, hours }));
+  }, [recentRecords]);
 
   async function handleCheck() {
     console.log("handleCheck called");
