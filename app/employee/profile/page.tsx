@@ -89,8 +89,8 @@ export default function EmployeeProfilePage() {
       }
 
       // Update employee document
-      if (employee?.id) {
-        await updateEmployee(employee.id, {
+      if (emp?.id) {
+        await updateEmployee(emp.id, {
           name: form.name,
           email: form.email?.toLowerCase(),
           department: form.department,
