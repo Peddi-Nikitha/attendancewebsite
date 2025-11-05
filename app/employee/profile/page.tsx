@@ -3,29 +3,39 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useRequireRole, useUpdateEmail } from "@/lib/firebase/hooks/useAuth";
-import { useEmployeeByUserId } from "@/lib/firebase/hooks/useEmployees";
+import { useEmployeeByUserId, useEmployeeByEmail } from "@/lib/firebase/hooks/useEmployees";
 import { db, storage } from "@/lib/firebase/config";
 import { doc, setDoc } from "firebase/firestore";
 import { ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
 import { updateEmployee } from "@/lib/firebase/services/employees";
+import { getCurrentUser as getLocalUser } from "@/lib/auth";
 
 export default function EmployeeProfilePage() {
   const { user, userProfile, loading } = useRequireRole("employee", "/");
-  const { employee } = useEmployeeByUserId(user?.uid);
+  const { employee: employeeById } = useEmployeeByUserId(user?.uid);
+  const [localUser, setLocalUser] = useState<any>(null);
+  // Local auth fallback
+  useEffect(() => {
+    setLocalUser(getLocalUser());
+  }, []);
+  const effectiveEmail = userProfile?.email || user?.email || localUser?.email || undefined;
+  const { employee: employeeByEmail } = useEmployeeByEmail(effectiveEmail);
   const [avatarPreview, setAvatarPreview] = useState<string>("");
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const fileRef = useRef<HTMLInputElement | null>(null);
   const { mutate: updateEmail, isLoading: isUpdatingEmail } = useUpdateEmail();
 
+  const emp = employeeById || employeeByEmail || null;
+
   const initial = useMemo(() => ({
-    name: userProfile?.name || "",
-    email: userProfile?.email || "",
+    name: userProfile?.name || emp?.name || localUser?.name || "",
+    email: userProfile?.email || effectiveEmail || "",
     phone: userProfile?.phoneNumber || "",
-    department: userProfile?.department || employee?.department || "",
-    designation: userProfile?.designation || employee?.designation || "",
-    managerId: userProfile?.managerId || employee?.managerId || "",
+    department: userProfile?.department || emp?.department || "",
+    designation: userProfile?.designation || emp?.designation || "",
+    managerId: userProfile?.managerId || emp?.managerId || "",
     avatarUrl: userProfile?.avatarUrl || "",
-  }), [userProfile, employee]);
+  }), [userProfile, emp, localUser, effectiveEmail]);
 
   const [form, setForm] = useState(initial);
   const [saving, setSaving] = useState(false);
@@ -97,6 +107,23 @@ export default function EmployeeProfilePage() {
     }
   };
 
+  const employment = useMemo(() => ({
+    employeeId: userProfile?.employeeId || emp?.employeeId || "",
+    role: userProfile?.role || "employee",
+    joinDate: emp?.joinDate || userProfile?.hireDate || "",
+  }), [userProfile, emp]);
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-semibold text-slate-900">Profile</h1>
+          <p className="text-sm text-slate-600">Loading your profile...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -135,6 +162,11 @@ export default function EmployeeProfilePage() {
                   <input type="email" className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm" value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} disabled={saving || loading || isUpdatingEmail} />
                 </div>
                 <div>
+                  <label className="mb-1 block text-xs font-medium text-slate-600">Password</label>
+                  <input type="password" className="w-full cursor-not-allowed rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm shadow-sm" value="********" readOnly />
+                  <div className="mt-1 text-[10px] text-slate-500">For security, passwords can’t be shown. Use Update Password below.</div>
+                </div>
+                <div>
                   <label className="mb-1 block text-xs font-medium text-slate-600">Phone</label>
                   <input className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm" value={form.phone} onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))} disabled={saving || loading} />
                 </div>
@@ -157,6 +189,28 @@ export default function EmployeeProfilePage() {
 
               <Button type="submit" disabled={saving || loading}>{saving ? "Saving..." : "Save Changes"}</Button>
             </form>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader title="Employment Details" />
+          <CardContent>
+            <div className="space-y-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-slate-600">Employee ID</label>
+                  <input readOnly className="w-full cursor-not-allowed rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm shadow-sm" value={employment.employeeId} />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-slate-600">Role</label>
+                  <input readOnly className="w-full cursor-not-allowed rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm shadow-sm" value={employment.role} />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-slate-600">Join Date</label>
+                  <input readOnly className="w-full cursor-not-allowed rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm shadow-sm" value={employment.joinDate} />
+                </div>
+              </div>
+            </div>
           </CardContent>
         </Card>
 
