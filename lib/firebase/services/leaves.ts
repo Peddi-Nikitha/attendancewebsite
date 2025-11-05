@@ -30,6 +30,21 @@ export type LeaveRequestDoc = {
   updatedAt: Timestamp | FieldValue;
 };
 
+// Safely convert Firestore Timestamp/FieldValue to milliseconds for sorting
+function toMillisSafe(value: Timestamp | FieldValue | undefined): number {
+  if (value && value instanceof Timestamp) {
+    return value.toMillis();
+  }
+  const anyVal: any = value as any;
+  if (anyVal && typeof anyVal.toMillis === "function") {
+    return anyVal.toMillis();
+  }
+  if (anyVal && typeof anyVal.seconds === "number") {
+    return anyVal.seconds * 1000;
+  }
+  return 0;
+}
+
 const COLLECTION_NAME = "leaveRequests";
 
 /**
@@ -149,8 +164,8 @@ export function listenEmployeeLeaveRequests(
               
               // Sort by createdAt descending in memory
               docs.sort((a, b) => {
-                const aTime = a.createdAt?.toMillis() || 0;
-                const bTime = b.createdAt?.toMillis() || 0;
+                const aTime = toMillisSafe(a.createdAt);
+                const bTime = toMillisSafe(b.createdAt);
                 return bTime - aTime;
               });
               
