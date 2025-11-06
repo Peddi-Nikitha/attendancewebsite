@@ -22,16 +22,70 @@ export function useEmployees(filters?: {
     if (filters?.department) clauses.push(where('department', '==', filters.department));
     if (typeof filters?.isActive === 'boolean') clauses.push(where('isActive', '==', filters.isActive));
     if (filters?.managerId) clauses.push(where('managerId', '==', filters.managerId));
-    const q = clauses.length ? query(col, ...clauses, orderBy('createdAt', 'desc')) : query(col, orderBy('createdAt', 'desc'));
+    
+    // Try with orderBy first
+    const qWithOrder = clauses.length 
+      ? query(col, ...clauses, orderBy('createdAt', 'desc')) 
+      : query(col, orderBy('createdAt', 'desc'));
 
-    const unsub = onSnapshot(q, (snap) => {
-      setEmployees(snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) })) as Employee[]);
-      setLoading(false);
-    }, (err) => {
-      setError(err);
-      setLoading(false);
-    });
-    return () => unsub();
+    let fallbackUnsub: (() => void) | null = null;
+    let isUsingFallback = false;
+
+    const unsub = onSnapshot(
+      qWithOrder,
+      (snap) => {
+        setEmployees(snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) })) as Employee[]);
+        setLoading(false);
+      },
+      (err: any) => {
+        // Check if it's an index error
+        if (err?.code === 'failed-precondition' && err?.message?.includes('index')) {
+          console.warn('Index not found, using fallback query (no server-side sorting):', err);
+          
+          // Fallback: query without orderBy, then sort in memory
+          if (!isUsingFallback) {
+            isUsingFallback = true;
+            const qFallback = clauses.length ? query(col, ...clauses) : query(col);
+            
+            fallbackUnsub = onSnapshot(
+              qFallback,
+              (snap2) => {
+                const docs = snap2.docs.map((d) => ({ id: d.id, ...(d.data() as any) })) as Employee[];
+                // Sort by createdAt descending in memory
+                docs.sort((a, b) => {
+                  const aTime = a.createdAt?.toMillis?.() ?? 0;
+                  const bTime = b.createdAt?.toMillis?.() ?? 0;
+                  return bTime - aTime;
+                });
+                setEmployees(docs);
+                setLoading(false);
+              },
+              (fallbackErr) => {
+                console.error('Error in fallback query:', fallbackErr);
+                const error = fallbackErr instanceof Error ? fallbackErr : new Error('Failed to load employees');
+                setError(error);
+                setLoading(false);
+              }
+            );
+          }
+          
+          // Still set the error so user knows about index issue
+          setError(err);
+        } else {
+          // Other errors
+          console.error('Error loading employees:', err);
+          setError(err instanceof Error ? err : new Error('Failed to load employees'));
+          setLoading(false);
+        }
+      }
+    );
+
+    return () => {
+      unsub();
+      if (fallbackUnsub) {
+        fallbackUnsub();
+      }
+    };
   }, [filters?.department, filters?.isActive, filters?.managerId]);
 
   return { employees, loading, error };

@@ -281,4 +281,95 @@ export function listenEmployeeAttendanceRecords(
   };
 }
 
+/**
+ * Listen to all attendance records (for admin dashboard)
+ * @param callback - Callback function that receives array of attendance documents
+ * @param errorCallback - Optional callback for errors
+ * @param limitCount - Maximum number of records to fetch (default: 1000)
+ * @returns Unsubscribe function
+ */
+export function listenAllAttendanceRecords(
+  callback: (docs: AttendanceDoc[]) => void,
+  errorCallback?: (error: Error) => void,
+  limitCount: number = 1000
+): Unsubscribe {
+  const attendanceRef = collection(db, "attendance");
+  
+  // Try with index first (with orderBy)
+  const qWithOrder = query(
+    attendanceRef,
+    orderBy("date", "desc"),
+    limit(limitCount)
+  );
+  
+  let fallbackUnsubscribe: Unsubscribe | null = null;
+  let isUsingFallback = false;
+  
+  const unsubscribe = onSnapshot(
+    qWithOrder,
+    (snapshot) => {
+      const docs = snapshot.docs.map((doc) => doc.data() as AttendanceDoc);
+      callback(docs);
+    },
+    (error: any) => {
+      // Check if it's an index error
+      if (error?.code === "failed-precondition" && error?.message?.includes("index")) {
+        console.warn("Index not found, using fallback query (no server-side sorting):", error);
+        
+        // Fallback: query without orderBy, then sort in memory
+        if (!isUsingFallback) {
+          isUsingFallback = true;
+          const qFallback = query(attendanceRef);
+          
+          fallbackUnsubscribe = onSnapshot(
+            qFallback,
+            (snapshot) => {
+              const docs = snapshot.docs.map((doc) => doc.data() as AttendanceDoc);
+              // Sort by date descending in memory
+              docs.sort((a, b) => {
+                if (a.date > b.date) return -1;
+                if (a.date < b.date) return 1;
+                return 0;
+              });
+              // Limit in memory
+              callback(docs.slice(0, limitCount));
+            },
+            (fallbackError) => {
+              console.error("Error in fallback query:", fallbackError);
+              const err = fallbackError instanceof Error 
+                ? fallbackError 
+                : new Error("Failed to load attendance records");
+              if (errorCallback) {
+                errorCallback(err);
+              } else {
+                callback([]);
+              }
+            }
+          );
+        }
+        
+        // Pass the original error with index link
+        if (errorCallback) {
+          errorCallback(error);
+        }
+      } else {
+        // Other errors
+        console.error("Error listening to attendance records:", error);
+        const err = error instanceof Error ? error : new Error("Failed to load attendance records");
+        if (errorCallback) {
+          errorCallback(err);
+        } else {
+          callback([]);
+        }
+      }
+    }
+  );
+  
+  return () => {
+    unsubscribe();
+    if (fallbackUnsubscribe) {
+      fallbackUnsubscribe();
+    }
+  };
+}
 

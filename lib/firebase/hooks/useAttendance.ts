@@ -5,7 +5,8 @@ import {
   listenTodayAttendance, 
   checkIn as svcCheckIn, 
   checkOut as svcCheckOut,
-  listenEmployeeAttendanceRecords
+  listenEmployeeAttendanceRecords,
+  listenAllAttendanceRecords
 } from "@/lib/firebase/services/attendance";
 
 export function useAttendanceToday(employeeId?: string) {
@@ -124,6 +125,33 @@ export function useEmployeeAttendanceRecords(employeeId?: string, limitCount: nu
     
     return () => unsub();
   }, [employeeId, limitCount]);
+
+  return { data, loading, error } as const;
+}
+
+export function useAllAttendanceRecords(limitCount: number = 1000) {
+  const [data, setData] = useState<AttendanceDoc[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<Error | null>(null);
+
+  useEffect(() => {
+    setLoading(true);
+    setError(null);
+    
+    const unsub = listenAllAttendanceRecords(
+      (docs) => {
+        setData(docs);
+        setLoading(false);
+      },
+      (err) => {
+        setError(err);
+        setLoading(false);
+      },
+      limitCount
+    );
+    
+    return () => unsub();
+  }, [limitCount]);
 
   return { data, loading, error } as const;
 }

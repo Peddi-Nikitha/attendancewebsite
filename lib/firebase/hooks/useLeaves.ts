@@ -3,7 +3,8 @@ import { useEffect, useState } from "react";
 import type { LeaveType, LeaveRequestDoc } from "@/lib/firebase/services/leaves";
 import { 
   createLeaveRequest,
-  listenEmployeeLeaveRequests
+  listenEmployeeLeaveRequests,
+  listenAllLeaveRequests
 } from "@/lib/firebase/services/leaves";
 
 /**
@@ -85,6 +86,40 @@ export function useEmployeeLeaveRequests(employeeId?: string, limitCount: number
     
     return () => unsub();
   }, [employeeId, limitCount]);
+
+  return { data, loading, error } as const;
+}
+
+/**
+ * Hook to fetch and listen to all leave requests (for admin)
+ * @param limitCount - Maximum number of records (default: 200)
+ * @param statusFilter - Optional status filter
+ * @returns Leave requests data, loading state, and error
+ */
+export function useAllLeaveRequests(limitCount: number = 200, statusFilter?: "Pending" | "Approved" | "Rejected") {
+  const [data, setData] = useState<(LeaveRequestDoc & { id: string })[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<Error | null>(null);
+
+  useEffect(() => {
+    setLoading(true);
+    setError(null);
+    
+    const unsub = listenAllLeaveRequests(
+      (docs) => {
+        setData(docs);
+        setLoading(false);
+      },
+      (err) => {
+        setError(err);
+        setLoading(false);
+      },
+      limitCount,
+      statusFilter
+    );
+    
+    return () => unsub();
+  }, [limitCount, statusFilter]);
 
   return { data, loading, error } as const;
 }

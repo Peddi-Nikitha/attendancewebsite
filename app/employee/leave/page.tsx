@@ -269,7 +269,7 @@ export default function EmployeeLeavePage() {
                 No leave requests found.
               </div>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {leaveRequests.map((l) => {
                   // Format date for display
                   const formatDate = (dateStr: string) => {
@@ -281,29 +281,71 @@ export default function EmployeeLeavePage() {
                     });
                   };
 
+                  // Calculate working days
+                  const calculateWorkingDays = (from: string, to: string) => {
+                    const start = new Date(from + "T00:00:00");
+                    const end = new Date(to + "T00:00:00");
+                    let count = 0;
+                    const cur = new Date(start);
+                    while (cur <= end) {
+                      const wd = cur.getDay();
+                      if (wd !== 0 && wd !== 6) count++;
+                      cur.setDate(cur.getDate() + 1);
+                    }
+                    return Math.max(0, count);
+                  };
+
+                  const days = calculateWorkingDays(l.from, l.to);
+
                   return (
                     <div
                       key={l.id}
-                      className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm"
+                      className={`rounded-lg border p-4 shadow-sm transition-all hover:shadow-md ${
+                        l.status === "Pending"
+                          ? "border-amber-200 bg-amber-50/30"
+                          : l.status === "Approved"
+                          ? "border-green-200 bg-green-50/30"
+                          : "border-rose-200 bg-rose-50/30"
+                      }`}
                     >
-                      <div>
-                        <div className="font-medium text-slate-800">{l.type} Leave</div>
-                        <div className="text-xs text-slate-500">
-                          {formatDate(l.from)} → {formatDate(l.to)}
-                          {l.reason && ` • ${l.reason}`}
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex-1 space-y-2">
+                          <div className="flex items-center gap-3">
+                            <div className="font-semibold text-slate-900">{l.type} Leave</div>
+                            <span
+                              className={`rounded-full px-2.5 py-1 text-xs font-medium ${
+                                l.status === "Approved"
+                                  ? "bg-green-100 text-green-700"
+                                  : l.status === "Rejected"
+                                  ? "bg-rose-100 text-rose-700"
+                                  : "bg-amber-100 text-amber-700"
+                              }`}
+                            >
+                              {l.status}
+                            </span>
+                          </div>
+                          <div className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2 lg:grid-cols-3">
+                            <div>
+                              <span className="text-slate-500">From:</span>{" "}
+                              <span className="font-medium text-slate-900">{formatDate(l.from)}</span>
+                            </div>
+                            <div>
+                              <span className="text-slate-500">To:</span>{" "}
+                              <span className="font-medium text-slate-900">{formatDate(l.to)}</span>
+                            </div>
+                            <div>
+                              <span className="text-slate-500">Duration:</span>{" "}
+                              <span className="font-medium text-slate-900">{days} working day{days !== 1 ? 's' : ''}</span>
+                            </div>
+                          </div>
+                          {l.reason && (
+                            <div className="text-sm">
+                              <span className="text-slate-500">Reason:</span>{" "}
+                              <span className="text-slate-700">{l.reason}</span>
+                            </div>
+                          )}
                         </div>
                       </div>
-                      <span
-                        className={`rounded-full px-2.5 py-1 text-xs font-medium ${
-                          l.status === "Approved"
-                            ? "bg-green-50 text-green-700"
-                            : l.status === "Rejected"
-                            ? "bg-rose-50 text-rose-700"
-                            : "bg-amber-50 text-amber-700"
-                        }`}
-                      >
-                        {l.status}
-                      </span>
                     </div>
                   );
                 })}
