@@ -10,6 +10,7 @@ import {
 	Wallet,
 	UserRound,
 	Briefcase,
+	FileText,
 } from "lucide-react";
 
 const nav = [
@@ -19,6 +20,7 @@ const nav = [
 	{ href: "/employee/timesheet", label: "Timesheet", icon: BookOpenText },
 	{ href: "/employee/leave", label: "Leave", icon: Leaf },
 	{ href: "/employee/payslips", label: "Payslips", icon: Wallet },
+	{ href: "/employee/documents", label: "My Documents", icon: FileText },
 	{ href: "/employee/profile", label: "Profile", icon: UserRound },
 	{ href: "/employee/projects", label: "My Projects", icon: Briefcase },
 ];

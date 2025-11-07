@@ -223,46 +223,9 @@ export async function signIn(
       throw new Error('Email and password are required');
     }
 
-    // Attempt Firestore-based credential login first (employees collection)
-    const emailLower = email.trim().toLowerCase();
-    try {
-      const qEmployees = query(
-        collection(db, 'employees'),
-        where('email', '==', emailLower),
-        fsLimit(1)
-      );
-      const snaps = await getDocs(qEmployees);
-      if (!snaps.empty) {
-        const docSnap = snaps.docs[0];
-        const employee = docSnap.data() as any;
-        if (employee?.passwordHash) {
-          // DJB2 deterministic hash (for demo)
-          let h = 5381 >>> 0;
-          for (let i = 0; i < password.length; i++) {
-            h = (((h << 5) + h) + password.charCodeAt(i)) >>> 0;
-          }
-          const hash = h.toString(16);
-          if (hash === employee.passwordHash) {
-            const now = Timestamp.now();
-            const role = (employee.role === 'admin' ? 'admin' : 'employee') as UserRole;
-            const userProfile: AuthUser = {
-              id: employee.userId || docSnap.id,
-              email: emailLower,
-              name: employee.name || emailLower,
-              role,
-              department: employee.department,
-              isActive: employee.isActive !== false,
-              createdAt: employee.createdAt || now,
-              updatedAt: now,
-              emailVerified: false,
-            } as AuthUser;
-            return userProfile;
-          }
-        }
-      }
-    } catch {}
-
-    // Sign in with Firebase Auth
+    // IMPORTANT: Always use Firebase Auth for Storage access
+    // Even if user exists in employees collection, we need Firebase Auth session
+    // Sign in with Firebase Auth first
     const userCredential: UserCredential = await signInWithEmailAndPassword(
       auth,
       email,
@@ -276,9 +239,28 @@ export async function signIn(
     const userDoc = await getDoc(userDocRef);
 
     if (!userDoc.exists()) {
-      // User doesn't have a profile, sign them out
-      await firebaseSignOut(auth);
-      throw new Error('User profile not found. Please contact support.');
+      // User doesn't have a profile - create one automatically
+      // This handles cases where Firebase Auth user exists but Firestore profile is missing
+      const emailLower = user.email?.toLowerCase() || '';
+      const defaultRole: UserRole = emailLower.includes('admin') ? 'admin' : 'employee';
+      
+      const defaultProfile: Omit<UserProfile, 'lastLoginAt'> = {
+        id: user.uid,
+        email: emailLower,
+        name: user.displayName || user.email?.split('@')[0] || 'User',
+        role: defaultRole,
+        isActive: true,
+        createdAt: serverTimestamp() as Timestamp,
+        updatedAt: serverTimestamp() as Timestamp,
+      };
+
+      await setDoc(userDocRef, defaultProfile);
+      
+      // Return the newly created profile
+      return {
+        ...defaultProfile,
+        emailVerified: user.emailVerified,
+      } as AuthUser;
     }
 
     const userData = userDoc.data() as UserProfile;

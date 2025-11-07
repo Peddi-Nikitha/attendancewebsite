@@ -12,7 +12,7 @@ import {
   Timestamp,
 } from "firebase/firestore";
 import { ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
-import { db, storage } from "../config";
+import { db, storage, auth } from "../config";
 
 export interface EmployeeDocument {
   id: string; // firestore doc id
@@ -42,11 +42,61 @@ export async function listEmployeeDocuments(employeeId: string, limitCount: numb
 }
 
 export async function uploadEmployeeDocument(employeeId: string, name: string, file: File): Promise<EmployeeDocument> {
+  // Verify user is authenticated with Firebase Auth before upload
+  // Firebase Storage rules require Firebase Auth, not just localStorage
+  let currentUser = auth.currentUser;
+  
+  // Wait a bit for auth to initialize if needed
+  if (!currentUser) {
+    // Wait for auth state to be ready (max 2 seconds)
+    await new Promise((resolve) => {
+      const unsubscribe = auth.onAuthStateChanged((user) => {
+        unsubscribe();
+        currentUser = user;
+        resolve(user);
+      });
+      setTimeout(() => {
+        unsubscribe();
+        resolve(null);
+      }, 2000);
+    });
+  }
+  
+  if (!currentUser) {
+    // Check if user is logged in via localStorage (custom auth)
+    const { getCurrentUser } = await import("../../auth");
+    const localUser = getCurrentUser();
+    
+    if (localUser) {
+      throw new Error(
+        "Firebase Authentication required for file uploads. " +
+        `You are logged in as ${localUser.email} via localStorage, but Firebase Auth is not active. ` +
+        "Please log out and log in again using Firebase Authentication (not the static admin bypass). " +
+        "File uploads require a valid Firebase Auth session."
+      );
+    }
+    
+    throw new Error(
+      "User must be authenticated with Firebase Auth to upload documents. " +
+      "Please sign in using Firebase Authentication and try again."
+    );
+  }
+
   const safeName = name?.trim() || file.name;
   const ts = Date.now();
   const path = `employee-docs/${employeeId}/${ts}_${file.name}`;
   const sref = storageRef(storage, path);
-  await uploadBytes(sref, file);
+  
+  try {
+    await uploadBytes(sref, file);
+  } catch (error: any) {
+    // Provide more detailed error message
+    if (error.code === 'storage/unauthorized') {
+      throw new Error(`Storage permission denied. User: ${currentUser.uid}, Path: ${path}. Please check Firebase Storage rules.`);
+    }
+    throw error;
+  }
+  
   const url = await getDownloadURL(sref);
 
   const ref = doc(collection(db, COL));

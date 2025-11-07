@@ -40,13 +40,40 @@ export default function LoginPage() {
       e.preventDefault();
       if (!validate()) return;
       try {
-        // Static admin bypass
+        // Static admin bypass - Try to create Firebase Auth session
         if (email.trim().toLowerCase() === "admin@example.com" && password === "admin123") {
-          try { localStorage.setItem("staticAdmin", "true"); } catch {}
+          try {
+            // Try to sign in with Firebase Auth first
+            const authUser = await login({ email: email.trim(), password: password });
+            if (authUser) {
+              try {
+                localStorage.setItem(
+                  "attendance_auth_user",
+                  JSON.stringify({ email: authUser.email, name: authUser.name, role: authUser.role })
+                );
+                localStorage.setItem("staticAdmin", "true");
+                window.dispatchEvent(new Event("localStorageChange"));
+              } catch {}
           router.replace("/admin");
           return;
+            }
+          } catch (authError: any) {
+            // If Firebase Auth fails, show helpful error
+            if (authError.message?.includes("user-not-found") || authError.message?.includes("No account found")) {
+              setError(
+                "Admin account not found in Firebase Authentication. " +
+                "Please create an admin account in Firebase Console: " +
+                "https://console.firebase.google.com/project/attendaceapp-9e768/authentication/users " +
+                "OR use existing Firebase Auth credentials."
+              );
+            } else {
+              setError(authError.message || "Login failed. Please create admin account in Firebase Console.");
+            }
+            return;
+          }
         }
 
+        // Try Firebase Auth login for all other users
         const authUser = await login({ email: email.trim(), password });
         if (!authUser) return;
         try {

@@ -1,0 +1,75 @@
+rules_version = '2';
+
+// ROBUST VERSION - Checks employees collection
+// This version checks if the employeeId in the path matches the user's employee document
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Helper function to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Helper function to get user data from Firestore
+    function getUserData() {
+      return firestore.get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+    
+    // Helper function to check if user is admin
+    function isAdmin() {
+      return isAuthenticated() && 
+             getUserData().role == 'admin';
+    }
+    
+    // Helper function to check if employeeId in path belongs to current user
+    // Checks if the employees collection document exists and has matching userId
+    function isOwnEmployeeDoc(employeeId) {
+      let empDoc = firestore.get(/databases/$(database)/documents/employees/$(employeeId));
+      return empDoc != null && empDoc.data.userId == request.auth.uid;
+    }
+    
+    // Helper function to get employeeId field from user profile
+    function getUserEmployeeId() {
+      return getUserData().employeeId;
+    }
+    
+    // Employee documents: employee-docs/{employeeId}/{filename}
+    match /employee-docs/{employeeId}/{fileName=**} {
+      // Allow read if:
+      // 1. User is authenticated and is admin, OR
+      // 2. User is authenticated and the employeeId document belongs to them, OR
+      // 3. User is authenticated and the employeeId matches their employeeId field
+      allow read: if isAuthenticated() && (
+        isAdmin() || 
+        isOwnEmployeeDoc(employeeId) ||
+        (getUserEmployeeId() != null && getUserEmployeeId() == employeeId)
+      );
+      
+      // Allow write (upload/delete) if:
+      // 1. User is authenticated and is admin, OR
+      // 2. User is authenticated and the employeeId document belongs to them, OR
+      // 3. User is authenticated and the employeeId matches their employeeId field
+      allow write: if isAuthenticated() && (
+        isAdmin() || 
+        isOwnEmployeeDoc(employeeId) ||
+        (getUserEmployeeId() != null && getUserEmployeeId() == employeeId)
+      );
+    }
+    
+    // Avatar images: avatars/{userId}
+    match /avatars/{userId} {
+      // Allow read for authenticated users
+      allow read: if isAuthenticated();
+      
+      // Allow write only if user is updating their own avatar
+      allow write: if isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    // Default: deny all other access
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
+

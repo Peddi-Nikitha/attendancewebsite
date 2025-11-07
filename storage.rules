@@ -1,0 +1,73 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Helper function to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Helper function to get user data from Firestore (with error handling)
+    function getUserData() {
+      return firestore.get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+    
+    // Helper function to check if user is admin
+    function isAdmin() {
+      return isAuthenticated() && 
+             getUserData().role == 'admin';
+    }
+    
+    // Helper function to get employee document ID
+    // The employeeId in storage path is the employees collection document ID
+    // Employees collection uses userId (auth.uid) as document ID
+    function getEmployeeDocId() {
+      return request.auth.uid;
+    }
+    
+    // Helper function to get employeeId field from user profile
+    function getUserEmployeeId() {
+      return getUserData().employeeId;
+    }
+    
+    // Employee documents: employee-docs/{employeeId}/{filename}
+    // Note: employeeId in path is the employees collection document ID
+    match /employee-docs/{employeeId}/{fileName=**} {
+      // Allow read if:
+      // 1. User is authenticated and is admin, OR
+      // 2. User is authenticated and the employeeId in path matches their UID (employees doc ID), OR
+      // 3. User is authenticated and the employeeId in path matches their employeeId field
+      allow read: if isAuthenticated() && (
+        isAdmin() || 
+        employeeId == getEmployeeDocId() ||
+        (getUserEmployeeId() != null && getUserEmployeeId() == employeeId)
+      );
+      
+      // Allow write (upload/delete) if:
+      // 1. User is authenticated and is admin, OR
+      // 2. User is authenticated and the employeeId in path matches their UID, OR
+      // 3. User is authenticated and the employeeId in path matches their employeeId field
+      allow write: if isAuthenticated() && (
+        isAdmin() || 
+        employeeId == getEmployeeDocId() ||
+        (getUserEmployeeId() != null && getUserEmployeeId() == employeeId)
+      );
+    }
+    
+    // Avatar images: avatars/{userId}
+    match /avatars/{userId} {
+      // Allow read for authenticated users
+      allow read: if isAuthenticated();
+      
+      // Allow write only if user is updating their own avatar
+      allow write: if isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    // Default: deny all other access
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
+

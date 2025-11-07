@@ -1,0 +1,25 @@
+rules_version = '2';
+
+// WORKING VERSION - This WILL work for uploads
+// Allows all authenticated users to read/write employee documents
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Employee documents - allow all authenticated users
+    match /employee-docs/{employeeId}/{allPaths=**} {
+      allow read, write: if request.auth != null;
+    }
+    
+    // Avatar images
+    match /avatars/{userId}/{allPaths=**} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Deny everything else
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
+
