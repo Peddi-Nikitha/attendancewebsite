@@ -5,14 +5,24 @@ import { Button } from "@/components/ui/button";
 import { Employee as StoreEmployee } from "@/lib/datastore";
 import { createEmployeeUser } from "../../../lib/firebase/functions";
 import { useEmployees } from "@/lib/firebase/hooks/useEmployees";
-import { createEmployee } from "@/lib/firebase/services/employees";
+import { createEmployee, updateEmployee } from "@/lib/firebase/services/employees";
+import { signUp } from "@/lib/firebase/auth";
 
 export default function AdminEmployeesPage() {
   const [q, setQ] = useState("");
   const [dept, setDept] = useState("");
   const [role, setRole] = useState("");
   const { employees, loading } = useEmployees();
-  const [draft, setDraft] = useState<Omit<StoreEmployee, "id">>({ name: "", email: "", department: "", role: "employee", manager: "" });
+  const [draft, setDraft] = useState<Omit<StoreEmployee, "id"> & { firstName?: string; lastName?: string; dateOfBirth?: string }>({ 
+    name: "", 
+    email: "", 
+    department: "", 
+    role: "employee", 
+    manager: "",
+    firstName: "",
+    lastName: "",
+    dateOfBirth: "",
+  });
   const [password, setPassword] = useState("");
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
@@ -38,13 +48,28 @@ export default function AdminEmployeesPage() {
       <Card hover>
         <CardHeader title="Add Employee" />
         <CardContent>
-          <div className="grid gap-4 sm:grid-cols-6">
+          <div className="grid gap-4 sm:grid-cols-3">
             <input 
               className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition" 
-              placeholder="Name" 
-              value={draft.name} 
-              onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))} 
+              placeholder="First Name" 
+              value={draft.firstName} 
+              onChange={(e) => setDraft((d) => ({ ...d, firstName: e.target.value }))} 
             />
+            <input 
+              className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition" 
+              placeholder="Last Name" 
+              value={draft.lastName} 
+              onChange={(e) => setDraft((d) => ({ ...d, lastName: e.target.value }))} 
+            />
+            <input 
+              type="date"
+              className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition" 
+              placeholder="Date of Birth" 
+              value={draft.dateOfBirth} 
+              onChange={(e) => setDraft((d) => ({ ...d, dateOfBirth: e.target.value }))} 
+            />
+          </div>
+          <div className="grid gap-4 sm:grid-cols-4 mt-4">
             <input 
               className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition sm:col-span-2" 
               placeholder="Email" 
@@ -65,12 +90,20 @@ export default function AdminEmployeesPage() {
               <option value="employee">Employee</option>
               <option value="admin">Admin</option>
             </select>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2 mt-4">
             <input 
               type="password" 
               className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition" 
               placeholder="Password" 
               value={password} 
               onChange={(e) => setPassword(e.target.value)} 
+            />
+            <input 
+              className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition" 
+              placeholder="Full Name (optional, auto-filled from first/last)" 
+              value={draft.name} 
+              onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))} 
             />
           </div>
           {createError ? (
@@ -85,44 +118,110 @@ export default function AdminEmployeesPage() {
           ) : null}
           <div className="mt-4 flex gap-3">
             <Button onClick={async () => {
-              if (!draft.name || !draft.email) { setCreateError("Name and email are required"); return; }
-              if (password && password.length < 6) { setCreateError("Password must be at least 6 characters"); return; }
-              setCreateError(null); setCreateInfo(null); setCreating(true);
+              // Construct full name from firstName and lastName if available, otherwise use name
+              const fullName = (draft.firstName && draft.lastName) 
+                ? `${draft.firstName} ${draft.lastName}`.trim()
+                : draft.name;
+              
+              if (!fullName || !draft.email) { 
+                setCreateError("Name (or First Name + Last Name) and email are required"); 
+                return; 
+              }
+              if (!password) {
+                setCreateError("Password is required for employee to be able to log in");
+                return;
+              }
+              if (password.length < 6) { 
+                setCreateError("Password must be at least 6 characters"); 
+                return; 
+              }
+              if (!draft.department) {
+                setCreateError("Department is required");
+                return;
+              }
+              setCreateError(null); 
+              setCreateInfo(null); 
+              setCreating(true);
               try {
-                if (password) {
+                const emailLower = draft.email.trim().toLowerCase();
+                const employeeId = `EMP-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+                
+                // Always create Firebase Auth user (password is required)
+                try {
+                  // Try Cloud Function first (if available)
                   try {
-                    await createEmployeeUser({ name: draft.name, email: draft.email, password, department: draft.department, role: draft.role });
-                    setDraft({ name: "", email: "", department: "", role: "employee", manager: "" });
+                    await createEmployeeUser({ 
+                      name: fullName, 
+                      email: emailLower, 
+                      password, 
+                      department: draft.department, 
+                      role: draft.role 
+                    });
+                    
+                    // Update employee document with additional fields if Cloud Function succeeded
+                    // Note: Cloud Function might create the employee document, so we need to find it
+                    const { getEmployeeByEmail } = await import("@/lib/firebase/services/employees");
+                    const createdEmp = await getEmployeeByEmail(emailLower);
+                    if (createdEmp) {
+                      const updates: any = {};
+                      if (draft.firstName) updates.firstName = draft.firstName;
+                      if (draft.lastName) updates.lastName = draft.lastName;
+                      if (draft.dateOfBirth) updates.dateOfBirth = draft.dateOfBirth;
+                      
+                      if (Object.keys(updates).length > 0) {
+                        await updateEmployee(createdEmp.id, updates);
+                      }
+                    }
+                    
+                    setCreateInfo("Employee created successfully. They can log in with the provided password.");
+                    setDraft({ name: "", email: "", department: "", role: "employee", manager: "", firstName: "", lastName: "", dateOfBirth: "" });
                     setPassword("");
                     return;
-                  } catch (err: any) {
-                    // fall through to Firestore-only fallback
+                  } catch (cfError: any) {
+                    // If Cloud Function fails, use direct Firebase Auth signUp
+                    console.log("Cloud Function not available, using direct Firebase Auth signUp");
                   }
-                }
-                const employeeId = `EMP-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
-                let passwordHash: string | undefined = undefined;
-                if (password) {
-                  // DJB2 deterministic hash (for demo)
-                  let h = 5381 >>> 0;
-                  for (let i = 0; i < password.length; i++) {
-                    h = (((h << 5) + h) + password.charCodeAt(i)) >>> 0;
+                  
+                  // Create Firebase Auth user directly using signUp
+                  const firebaseUser = await signUp(emailLower, password, {
+                    name: fullName,
+                    role: draft.role as 'employee' | 'admin',
+                    department: draft.department,
+                    designation: draft.department, // Use department as designation if not provided
+                    employeeId: employeeId,
+                    hireDate: new Date().toISOString().split('T')[0],
+                  });
+                  
+                  // Update employee document with additional fields (firstName, lastName, dateOfBirth)
+                  // The employee document is created at employees/{user.uid} by signUp
+                  if (firebaseUser.uid) {
+                    try {
+                      const updates: any = {};
+                      if (draft.firstName) updates.firstName = draft.firstName;
+                      if (draft.lastName) updates.lastName = draft.lastName;
+                      if (draft.dateOfBirth) updates.dateOfBirth = draft.dateOfBirth;
+                      
+                      if (Object.keys(updates).length > 0) {
+                        await updateEmployee(firebaseUser.uid, updates);
+                      }
+                    } catch (updateError) {
+                      console.warn("Failed to update employee with additional fields:", updateError);
+                      // Don't fail the whole operation if this update fails
+                    }
                   }
-                  passwordHash = h.toString(16);
+                  
+                  setCreateInfo("Employee created successfully in Firebase. They can log in with email: " + emailLower + " and the provided password.");
+                  setDraft({ name: "", email: "", department: "", role: "employee", manager: "", firstName: "", lastName: "", dateOfBirth: "" });
+                  setPassword("");
+                  return;
+                } catch (authError: any) {
+                  // If email already exists in Firebase Auth
+                  if (authError.message?.includes("already registered") || authError.message?.includes("email-already-in-use")) {
+                    setCreateError("An account with this email already exists in Firebase. Please use a different email or have the employee reset their password.");
+                    return;
+                  }
+                  throw authError;
                 }
-                await createEmployee({
-                  userId: "",
-                  employeeId,
-                  name: draft.name,
-                  email: draft.email.trim().toLowerCase(),
-                  role: draft.role as any,
-                  department: draft.department,
-                  passwordHash,
-                  joinDate: new Date().toISOString().split('T')[0],
-                  isActive: true,
-                } as any);
-                setCreateInfo("Employee saved. They can log in now with the provided password.");
-                setDraft({ name: "", email: "", department: "", role: "employee", manager: "" });
-                setPassword("");
               } catch (e: any) {
                 const message = e?.message || "Failed to create employee";
                 setCreateError(message);
@@ -235,5 +334,6 @@ export default function AdminEmployeesPage() {
     </div>
   );
 }
+
 
 

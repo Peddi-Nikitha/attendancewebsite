@@ -89,7 +89,16 @@ export async function getEmployees(filters?: {
 
 export async function updateEmployee(employeeDocId: string, updates: Partial<Employee>) {
   const ref = doc(db, 'employees', employeeDocId);
-  await updateDoc(ref, { ...updates, updatedAt: serverTimestamp() });
+  
+  // Remove undefined values from updates (Firestore doesn't allow undefined)
+  const cleanUpdates: any = { updatedAt: serverTimestamp() };
+  for (const [key, value] of Object.entries(updates)) {
+    if (value !== undefined) {
+      cleanUpdates[key] = value;
+    }
+  }
+  
+  await updateDoc(ref, cleanUpdates);
   const snap = await getDoc(ref);
   return { id: ref.id, ...(snap.data() as any) } as Employee;
 }

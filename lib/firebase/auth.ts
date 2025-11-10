@@ -123,30 +123,46 @@ export async function signUp(
       throw new Error('Name and role are required');
     }
 
+    // Normalize email to lowercase (Firebase Auth is case-insensitive but we want consistency)
+    const emailLower = email.trim().toLowerCase();
+
     // Create Firebase Auth user
     const userCredential: UserCredential = await createUserWithEmailAndPassword(
       auth,
-      email,
+      emailLower,
       password
     );
 
     const user = userCredential.user;
 
     // Create user profile in Firestore
-    const userProfile: Omit<UserProfile, 'lastLoginAt'> = {
+    // Only include fields that are defined (Firestore doesn't allow undefined values)
+    const userProfile: any = {
       id: user.uid,
-      email: user.email!,
+      email: emailLower, // Use normalized email
       name: userData.name,
       role: userData.role,
-      department: userData.department,
-      phoneNumber: userData.phoneNumber,
-      designation: userData.designation,
-      employeeId: userData.employeeId,
-      hireDate: userData.hireDate,
       isActive: true,
       createdAt: serverTimestamp() as Timestamp,
       updatedAt: serverTimestamp() as Timestamp,
     };
+
+    // Add optional fields only if they are defined
+    if (userData.department !== undefined) {
+      userProfile.department = userData.department;
+    }
+    if (userData.phoneNumber !== undefined) {
+      userProfile.phoneNumber = userData.phoneNumber;
+    }
+    if (userData.designation !== undefined) {
+      userProfile.designation = userData.designation;
+    }
+    if (userData.employeeId !== undefined) {
+      userProfile.employeeId = userData.employeeId;
+    }
+    if (userData.hireDate !== undefined) {
+      userProfile.hireDate = userData.hireDate;
+    }
 
     // Save user profile to Firestore
     const userDocRef = doc(db, 'users', user.uid);
@@ -156,9 +172,11 @@ export async function signUp(
     if (userData.role === 'employee' && userData.department && userData.designation) {
       const employeeId = userData.employeeId || `EMP-${user.uid.substring(0, 8).toUpperCase()}`;
       
-      const employeeData: EmployeeData = {
+      const employeeData: any = {
         userId: user.uid,
         employeeId: employeeId,
+        name: userData.name,
+        email: emailLower,
         department: userData.department,
         designation: userData.designation,
         joinDate: userData.hireDate || new Date().toISOString().split('T')[0],
@@ -223,12 +241,15 @@ export async function signIn(
       throw new Error('Email and password are required');
     }
 
+    // Normalize email to lowercase (Firebase Auth is case-insensitive but we want consistency)
+    const emailLower = email.trim().toLowerCase();
+
     // IMPORTANT: Always use Firebase Auth for Storage access
     // Even if user exists in employees collection, we need Firebase Auth session
     // Sign in with Firebase Auth first
     const userCredential: UserCredential = await signInWithEmailAndPassword(
       auth,
-      email,
+      emailLower,
       password
     );
 
