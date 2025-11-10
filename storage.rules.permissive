@@ -12,6 +12,11 @@ service firebase.storage {
       allow read, write: if request.auth != null;
     }
     
+    // Payslips - allow all authenticated users to read/write
+    match /payslips/{employeeId}/{allPaths=**} {
+      allow read, write: if request.auth != null;
+    }
+    
     // Avatar images
     match /avatars/{userId}/{allPaths=**} {
       allow read: if request.auth != null;

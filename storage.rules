@@ -55,6 +55,24 @@ service firebase.storage {
       );
     }
     
+    // Payslips: payslips/{employeeId}/{filename}
+    // Note: employeeId in path is the employees collection document ID
+    match /payslips/{employeeId}/{fileName=**} {
+      // Allow read if:
+      // 1. User is authenticated and is admin, OR
+      // 2. User is authenticated and the employeeId in path matches their UID (employees doc ID), OR
+      // 3. User is authenticated and the employeeId in path matches their employeeId field
+      allow read: if isAuthenticated() && (
+        isAdmin() || 
+        employeeId == getEmployeeDocId() ||
+        (getUserEmployeeId() != null && getUserEmployeeId() == employeeId)
+      );
+      
+      // Allow write (upload/delete) if:
+      // 1. User is authenticated and is admin
+      allow write: if isAuthenticated() && isAdmin();
+    }
+    
     // Avatar images: avatars/{userId}
     match /avatars/{userId} {
       // Allow read for authenticated users

@@ -7,6 +7,7 @@ import { useAllAttendanceRecords } from "@/lib/firebase/hooks/useAttendance";
 import { useAllLeaveRequests } from "@/lib/firebase/hooks/useLeaves";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip } from "recharts";
+import { Users, ClipboardCheck, Leaf, Clock, TrendingUp, Plus, FileText, BarChart3 } from "lucide-react";
  
 
 export default function AdminDashboardPage() {
@@ -88,20 +89,20 @@ export default function AdminDashboardPage() {
  
 
   return (
-    <div>
+    <div className="space-y-8">
       <div className="flex items-baseline justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
-          <p className="text-neutral-500">Manage employees, attendance, payroll and more</p>
+          <h1 className="text-4xl font-bold tracking-tight text-slate-900">Admin Dashboard</h1>
+          <p className="mt-2 text-slate-600">Manage employees, attendance, payroll and more</p>
         </div>
       </div>
 
       {employeesError && (
-        <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm">
+        <div className="rounded-xl border border-amber-200/80 bg-gradient-to-br from-amber-50 to-orange-50 px-6 py-4 shadow-sm">
           {employeesError.message?.includes("index") || employeesError.message?.includes("create_composite") ? (
-            <div className="space-y-2">
-              <p className="font-medium text-amber-800">Firestore Index Required</p>
-              <p className="text-amber-700">
+            <div className="space-y-3">
+              <p className="font-semibold text-amber-900">Firestore Index Required</p>
+              <p className="text-sm text-amber-800">
                 To display employees efficiently, please create a Firestore index. 
                 The data will still load using a fallback method, but creating the index will improve performance.
               </p>
@@ -113,7 +114,7 @@ export default function AdminDashboardPage() {
                     href={indexUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-block mt-2 px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition"
+                    className="inline-block mt-2 px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition shadow-sm hover:shadow"
                   >
                     Create Index Now
                   </a>
@@ -121,86 +122,165 @@ export default function AdminDashboardPage() {
               })()}
             </div>
           ) : (
-            <div className="text-amber-700">
+            <div className="text-amber-800">
               Error loading employees: {employeesError.message}
             </div>
           )}
         </div>
       )}
 
-      <section className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader title="Total Employees" />
+      <section className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <Card hover>
+          <CardHeader 
+            title="Total Employees" 
+            icon={<Users className="text-blue-600" size={20} />}
+          />
           <CardContent>
-            <div className="text-3xl font-semibold">
-              {employeesLoading ? "..." : totalEmployees}
+            <div className="flex items-baseline gap-2">
+              <div className="text-4xl font-bold text-slate-900">
+                {employeesLoading ? "..." : totalEmployees}
+              </div>
             </div>
+            <p className="mt-2 text-xs text-slate-500">Active workforce</p>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader title="Today's Attendance" />
+        <Card hover>
+          <CardHeader 
+            title="Today's Attendance" 
+            icon={<ClipboardCheck className="text-green-600" size={20} />}
+          />
           <CardContent>
             {attendanceLoading ? (
               <div className="text-sm text-slate-500">Loading...</div>
             ) : (
-              <>
-                <div className="text-sm">Present: <span className="font-semibold text-green-600">{present}</span></div>
-                <div className="text-sm">Absent: <span className="font-semibold text-rose-600">{absent}</span></div>
-                <div className="text-sm">Late/Ongoing: <span className="font-semibold text-amber-600">{late}</span></div>
-              </>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-600">Present</span>
+                  <span className="font-bold text-green-600 text-lg">{present}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-600">Absent</span>
+                  <span className="font-bold text-red-600 text-lg">{absent}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-600">Late/Ongoing</span>
+                  <span className="font-bold text-amber-600 text-lg">{late}</span>
+                </div>
+              </div>
             )}
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader title="Active Leaves" />
+        <Card hover>
+          <CardHeader 
+            title="Active Leaves" 
+            icon={<Leaf className="text-emerald-600" size={20} />}
+          />
           <CardContent>
-            <div className="text-3xl font-semibold">
-              {leavesLoading ? "..." : activeLeaves}
+            <div className="flex items-baseline gap-2">
+              <div className="text-4xl font-bold text-slate-900">
+                {leavesLoading ? "..." : activeLeaves}
+              </div>
             </div>
+            <p className="mt-2 text-xs text-slate-500">Currently on leave</p>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader title="Pending Approvals" />
+        <Card hover>
+          <CardHeader 
+            title="Pending Approvals" 
+            icon={<Clock className="text-amber-600" size={20} />}
+          />
           <CardContent>
-            <div className="text-3xl font-semibold">
-              {leavesLoading ? "..." : pendingApprovals}
+            <div className="flex items-baseline gap-2">
+              <div className="text-4xl font-bold text-slate-900">
+                {leavesLoading ? "..." : pendingApprovals}
+              </div>
             </div>
+            <p className="mt-2 text-xs text-slate-500">Awaiting review</p>
           </CardContent>
         </Card>
       </section>
 
-      <section className="mt-6 grid gap-4 lg:grid-cols-3">
-        <Card>
-          <CardHeader title="Monthly Attendance Trend" />
+      <section className="grid gap-6 lg:grid-cols-3">
+        <Card className="lg:col-span-2" hover>
+          <CardHeader 
+            title="Monthly Attendance Trend" 
+            subtitle="Last 12 months"
+            icon={<TrendingUp className="text-blue-600" size={20} />}
+          />
           <CardContent>
             {attendanceLoading ? (
-              <div className="h-56 flex items-center justify-center text-slate-500">
-                Loading chart data...
+              <div className="h-64 flex items-center justify-center text-slate-500">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                  <p className="text-sm">Loading chart data...</p>
+                </div>
               </div>
             ) : (
-              <div className="h-56 w-full" style={{ minWidth: 0, minHeight: 0 }}>
+              <div className="h-64 w-full" style={{ minWidth: 0, minHeight: 0 }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={monthlyData}>
-                    <XAxis dataKey="name" tick={{ fill: "#475569", fontSize: 12 }} tickLine={false} axisLine={{ stroke: "#E2E8F0" }} />
-                    <YAxis tick={{ fill: "#475569", fontSize: 12 }} tickLine={false} axisLine={{ stroke: "#E2E8F0" }} />
-                    <Tooltip cursor={{ stroke: "#93C5FD" }} />
-                    <Line type="monotone" dataKey="value" stroke="#2563eb" strokeWidth={2} dot={false} />
+                    <XAxis 
+                      dataKey="name" 
+                      tick={{ fill: "#64748b", fontSize: 11 }} 
+                      tickLine={false} 
+                      axisLine={{ stroke: "#E2E8F0" }} 
+                    />
+                    <YAxis 
+                      tick={{ fill: "#64748b", fontSize: 11 }} 
+                      tickLine={false} 
+                      axisLine={{ stroke: "#E2E8F0" }} 
+                    />
+                    <Tooltip 
+                      cursor={{ stroke: "#93C5FD", strokeWidth: 1 }} 
+                      contentStyle={{ 
+                        backgroundColor: 'white', 
+                        border: '1px solid #E2E8F0', 
+                        borderRadius: '8px',
+                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                      }}
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="value" 
+                      stroke="#2563eb" 
+                      strokeWidth={3} 
+                      dot={{ fill: "#2563eb", r: 4 }} 
+                      activeDot={{ r: 6 }}
+                    />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
             )}
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader title="Quick Actions" />
+        <Card hover>
+          <CardHeader 
+            title="Quick Actions" 
+            icon={<BarChart3 className="text-blue-600" size={20} />}
+          />
           <CardContent>
-            <div className="space-y-4">
-              {/* Other Quick Actions */}
-              <div className="grid gap-3">
-                <a href="/admin/employees" className="rounded-lg bg-blue-600 px-4 py-2 text-center text-sm font-medium text-white">Add Employee</a>
-                <a href="/admin/payslips" className="rounded-lg bg-slate-900 px-4 py-2 text-center text-sm font-medium text-white">Generate Payslip</a>
-                <a href="/admin/reports" className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-center text-sm">View Reports</a>
-              </div>
+            <div className="space-y-3">
+              <a 
+                href="/admin/employees" 
+                className="flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-3 text-center text-sm font-medium text-white shadow-md hover:shadow-lg transition-all"
+              >
+                <Plus size={16} />
+                Add Employee
+              </a>
+              <a 
+                href="/admin/payslips" 
+                className="flex items-center justify-center gap-2 rounded-lg bg-slate-900 px-4 py-3 text-center text-sm font-medium text-white shadow-md hover:shadow-lg transition-all"
+              >
+                <FileText size={16} />
+                Generate Payslip
+              </a>
+              <a 
+                href="/admin/reports" 
+                className="flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-3 text-center text-sm font-medium text-slate-700 hover:bg-slate-50 transition-all shadow-sm hover:shadow"
+              >
+                <BarChart3 size={16} />
+                View Reports
+              </a>
             </div>
           </CardContent>
         </Card>

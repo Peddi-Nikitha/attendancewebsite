@@ -22,12 +22,16 @@ export interface Employee {
   userId: string;
   employeeId: string;
   name?: string;
+  firstName?: string;
+  lastName?: string;
   email?: string;
   role?: 'employee' | 'admin';
   department: string;
   managerId?: string;
   designation?: string;
   joinDate: string;
+  dateOfBirth?: string; // YYYY-MM-DD format
+  address?: string;
   salary?: { basic: number; allowances: number; deductions: number };
   leaveBalance?: {
     casual: number;

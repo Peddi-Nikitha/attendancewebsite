@@ -29,28 +29,61 @@ export default function AdminEmployeesPage() {
   }, [employees, q, dept, role]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-semibold text-slate-900">Employee Management</h1>
-        <p className="text-sm text-slate-600">Add/Edit/Delete and filter by Department/Role.</p>
+        <h1 className="text-4xl font-bold tracking-tight text-slate-900">Employee Management</h1>
+        <p className="mt-2 text-slate-600">Add, edit, and manage employees. Filter by department or role.</p>
       </div>
 
-      <Card>
+      <Card hover>
         <CardHeader title="Add Employee" />
         <CardContent>
-          <div className="grid gap-3 sm:grid-cols-6">
-            <input className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm" placeholder="Name" value={draft.name} onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))} />
-            <input className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm sm:col-span-2" placeholder="Email" value={draft.email} onChange={(e) => setDraft((d) => ({ ...d, email: e.target.value }))} />
-            <input className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm" placeholder="Department" value={draft.department} onChange={(e) => setDraft((d) => ({ ...d, department: e.target.value }))} />
-            <select className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm" value={draft.role} onChange={(e) => setDraft((d) => ({ ...d, role: e.target.value as any }))}>
+          <div className="grid gap-4 sm:grid-cols-6">
+            <input 
+              className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition" 
+              placeholder="Name" 
+              value={draft.name} 
+              onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))} 
+            />
+            <input 
+              className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition sm:col-span-2" 
+              placeholder="Email" 
+              value={draft.email} 
+              onChange={(e) => setDraft((d) => ({ ...d, email: e.target.value }))} 
+            />
+            <input 
+              className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition" 
+              placeholder="Department" 
+              value={draft.department} 
+              onChange={(e) => setDraft((d) => ({ ...d, department: e.target.value }))} 
+            />
+            <select 
+              className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition" 
+              value={draft.role} 
+              onChange={(e) => setDraft((d) => ({ ...d, role: e.target.value as any }))}
+            >
               <option value="employee">Employee</option>
               <option value="admin">Admin</option>
             </select>
-            <input type="password" className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} />
+            <input 
+              type="password" 
+              className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition" 
+              placeholder="Password" 
+              value={password} 
+              onChange={(e) => setPassword(e.target.value)} 
+            />
           </div>
-          {createError ? (<div className="mt-2 text-sm text-rose-600">{createError}</div>) : null}
-          {createInfo ? (<div className="mt-2 text-sm text-amber-600">{createInfo}</div>) : null}
-          <div className="mt-3 flex gap-2">
+          {createError ? (
+            <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {createError}
+            </div>
+          ) : null}
+          {createInfo ? (
+            <div className="mt-4 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
+              {createInfo}
+            </div>
+          ) : null}
+          <div className="mt-4 flex gap-3">
             <Button onClick={async () => {
               if (!draft.name || !draft.email) { setCreateError("Name and email are required"); return; }
               if (password && password.length < 6) { setCreateError("Password must be at least 6 characters"); return; }
@@ -101,46 +134,95 @@ export default function AdminEmployeesPage() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card hover>
         <CardHeader title="Employees" />
         <CardContent>
-          <div className="mb-3 grid gap-3 sm:grid-cols-3">
-            <input className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm" placeholder="Search name/email" value={q} onChange={(e) => setQ(e.target.value)} />
-            <input className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm" placeholder="Filter Department" value={dept} onChange={(e) => setDept(e.target.value)} />
-            <select className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm" value={role} onChange={(e) => setRole(e.target.value)}>
+          <div className="mb-4 grid gap-3 sm:grid-cols-3">
+            <input 
+              className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition" 
+              placeholder="Search name/email" 
+              value={q} 
+              onChange={(e) => setQ(e.target.value)} 
+            />
+            <input 
+              className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition" 
+              placeholder="Filter Department" 
+              value={dept} 
+              onChange={(e) => setDept(e.target.value)} 
+            />
+            <select 
+              className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition" 
+              value={role} 
+              onChange={(e) => setRole(e.target.value)}
+            >
               <option value="">All Roles</option>
               <option value="employee">Employee</option>
               <option value="admin">Admin</option>
             </select>
           </div>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto rounded-lg border border-slate-200">
             <table className="w-full text-left text-sm">
-              <thead>
-                <tr className="text-slate-600">
-                  <th className="border-b border-slate-200 px-3 py-2 font-medium">Name</th>
-                  <th className="border-b border-slate-200 px-3 py-2 font-medium">Email</th>
-                  <th className="border-b border-slate-200 px-3 py-2 font-medium">Department</th>
-                  <th className="border-b border-slate-200 px-3 py-2 font-medium">Role</th>
-                  <th className="border-b border-slate-200 px-3 py-2 font-medium">Actions</th>
+              <thead className="bg-slate-50">
+                <tr>
+                  <th className="border-b border-slate-200 px-4 py-3 font-semibold text-slate-700">Name</th>
+                  <th className="border-b border-slate-200 px-4 py-3 font-semibold text-slate-700">Email</th>
+                  <th className="border-b border-slate-200 px-4 py-3 font-semibold text-slate-700">Department</th>
+                  <th className="border-b border-slate-200 px-4 py-3 font-semibold text-slate-700">Role</th>
+                  <th className="border-b border-slate-200 px-4 py-3 font-semibold text-slate-700">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
-                  <tr><td className="px-3 py-4 text-slate-500" colSpan={5}>Loading...</td></tr>
+                  <tr>
+                    <td className="px-4 py-8 text-center text-slate-500" colSpan={5}>
+                      <div className="flex items-center justify-center gap-2">
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+                        <span>Loading...</span>
+                      </div>
+                    </td>
+                  </tr>
                 ) : filtered.length === 0 ? (
-                  <tr><td className="px-3 py-4 text-slate-500" colSpan={5}>No employees found</td></tr>
+                  <tr>
+                    <td className="px-4 py-8 text-center text-slate-500" colSpan={5}>No employees found</td>
+                  </tr>
                 ) : filtered.map((e: any) => (
-                  <tr key={e.id} className="hover:bg-slate-50">
-                    <td className="border-b border-slate-100 px-3 py-2 text-slate-800">{e.name}</td>
-                    <td className="border-b border-slate-100 px-3 py-2">{e.email}</td>
-                    <td className="border-b border-slate-100 px-3 py-2">{e.department}</td>
-                    <td className="border-b border-slate-100 px-3 py-2">{e.role || 'employee'}</td>
-                    <td className="border-b border-slate-100 px-3 py-2">
+                  <tr key={e.id} className="hover:bg-slate-50 transition-colors">
+                    <td className="border-b border-slate-100 px-4 py-3 font-medium text-slate-900">{e.name}</td>
+                    <td className="border-b border-slate-100 px-4 py-3 text-slate-700">{e.email}</td>
+                    <td className="border-b border-slate-100 px-4 py-3 text-slate-700">{e.department}</td>
+                    <td className="border-b border-slate-100 px-4 py-3">
+                      <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${
+                        e.role === 'admin' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'
+                      }`}>
+                        {e.role || 'employee'}
+                      </span>
+                    </td>
+                    <td className="border-b border-slate-100 px-4 py-3">
                       <div className="flex flex-wrap gap-2">
-                        <a className="rounded border border-slate-200 px-2 py-1" href={`/admin/employees?id=${e.id}`}>View</a>
-                        <a className="rounded border border-slate-200 px-2 py-1" href={`/admin/employees/documents/${e.id}`}>Documents</a>
-                        <button className="rounded border border-slate-200 px-2 py-1" onClick={() => alert('Edit not yet wired to Firestore in this view.')}>Edit</button>
-                        <button className="rounded border border-slate-200 px-2 py-1 text-rose-600" onClick={() => alert('Delete not yet wired to Firestore in this view.')}>Delete</button>
+                        <a 
+                          className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 transition shadow-sm hover:shadow" 
+                          href={`/admin/employees?id=${e.id}`}
+                        >
+                          View
+                        </a>
+                        <a 
+                          className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 transition shadow-sm hover:shadow" 
+                          href={`/admin/employees/documents/${e.id}`}
+                        >
+                          Documents
+                        </a>
+                        <button 
+                          className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 transition shadow-sm hover:shadow" 
+                          onClick={() => alert('Edit not yet wired to Firestore in this view.')}
+                        >
+                          Edit
+                        </button>
+                        <button 
+                          className="rounded-lg border border-red-300 bg-red-50 px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-100 transition shadow-sm hover:shadow" 
+                          onClick={() => alert('Delete not yet wired to Firestore in this view.')}
+                        >
+                          Delete
+                        </button>
                       </div>
                     </td>
                   </tr>

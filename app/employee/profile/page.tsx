@@ -29,12 +29,16 @@ export default function EmployeeProfilePage() {
 
   const initial = useMemo(() => ({
     name: userProfile?.name || emp?.name || localUser?.name || "",
+    firstName: emp?.firstName || "",
+    lastName: emp?.lastName || "",
     email: userProfile?.email || effectiveEmail || "",
     phone: userProfile?.phoneNumber || "",
     department: userProfile?.department || emp?.department || "",
     designation: userProfile?.designation || emp?.designation || "",
     managerId: userProfile?.managerId || emp?.managerId || "",
     avatarUrl: userProfile?.avatarUrl || "",
+    dateOfBirth: emp?.dateOfBirth || "",
+    address: emp?.address || "",
   }), [userProfile, emp, localUser, effectiveEmail]);
 
   const [form, setForm] = useState(initial);
@@ -71,10 +75,15 @@ export default function EmployeeProfilePage() {
         avatarUrl = await getDownloadURL(r);
       }
 
+      // Construct full name from firstName and lastName if available, otherwise use name
+      const fullName = (form.firstName && form.lastName) 
+        ? `${form.firstName} ${form.lastName}`.trim()
+        : form.name;
+
       // Update user profile document
       const userDocRef = doc(db, "users", user.uid);
       const userUpdates: any = {
-        name: form.name,
+        name: fullName || form.name,
         phoneNumber: form.phone,
         department: form.department,
         designation: form.designation,
@@ -91,11 +100,15 @@ export default function EmployeeProfilePage() {
       // Update employee document
       if (emp?.id) {
         await updateEmployee(emp.id, {
-          name: form.name,
+          name: fullName || form.name,
+          firstName: form.firstName || undefined,
+          lastName: form.lastName || undefined,
           email: form.email?.toLowerCase(),
           department: form.department,
           designation: form.designation,
           managerId: form.managerId || undefined,
+          dateOfBirth: form.dateOfBirth || undefined,
+          address: form.address || undefined,
         });
       }
 
@@ -154,17 +167,20 @@ export default function EmployeeProfilePage() {
 
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
-                  <label className="mb-1 block text-xs font-medium text-slate-600">Full Name</label>
-                  <input className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} disabled={saving || loading} />
+                  <label className="mb-1 block text-xs font-medium text-slate-600">First Name</label>
+                  <input className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm" value={form.firstName} onChange={(e) => setForm((f) => ({ ...f, firstName: e.target.value }))} disabled={saving || loading} />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-slate-600">Last Name</label>
+                  <input className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm" value={form.lastName} onChange={(e) => setForm((f) => ({ ...f, lastName: e.target.value }))} disabled={saving || loading} />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-slate-600">Date of Birth</label>
+                  <input type="date" className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm" value={form.dateOfBirth} onChange={(e) => setForm((f) => ({ ...f, dateOfBirth: e.target.value }))} disabled={saving || loading} />
                 </div>
                 <div>
                   <label className="mb-1 block text-xs font-medium text-slate-600">Email</label>
                   <input type="email" className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm" value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} disabled={saving || loading || isUpdatingEmail} />
-                </div>
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-slate-600">Password</label>
-                  <input type="password" className="w-full cursor-not-allowed rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm shadow-sm" value="********" readOnly />
-                  <div className="mt-1 text-[10px] text-slate-500">For security, passwords can’t be shown. Use Update Password below.</div>
                 </div>
                 <div>
                   <label className="mb-1 block text-xs font-medium text-slate-600">Phone</label>
@@ -174,6 +190,24 @@ export default function EmployeeProfilePage() {
                   <label className="mb-1 block text-xs font-medium text-slate-600">Department</label>
                   <input className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm" value={form.department} onChange={(e) => setForm((f) => ({ ...f, department: e.target.value }))} disabled={saving || loading} />
                 </div>
+              </div>
+
+              <div>
+                <label className="mb-1 block text-xs font-medium text-slate-600">Address</label>
+                <textarea 
+                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm" 
+                  rows={3}
+                  value={form.address} 
+                  onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))} 
+                  disabled={saving || loading}
+                  placeholder="Enter your address"
+                />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-xs font-medium text-slate-600">Password</label>
+                <input type="password" className="w-full cursor-not-allowed rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm shadow-sm" value="********" readOnly />
+                <div className="mt-1 text-[10px] text-slate-500">For security, passwords can't be shown. Use Update Password below.</div>
               </div>
 
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">

@@ -5,7 +5,7 @@ import { getCurrentUser, logout } from "../../lib/auth";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
-import { CalendarDays, Clock8, Leaf, MapPin } from "lucide-react";
+import { CalendarDays, Clock8, Leaf, MapPin, Wallet } from "lucide-react";
 import { useAttendanceToday, useCheckIn, useCheckOut, useEmployeeAttendanceRecords } from "@/lib/firebase/hooks/useAttendance";
 
 const weekdayNamesMonStart = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
@@ -212,114 +212,140 @@ export default function EmployeeDashboardPage() {
   });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900">Employee Dashboard</h1>
-          <p className="text-sm text-slate-600">Track your attendance, leaves, and payslips easily.</p>
+          <h1 className="text-4xl font-bold tracking-tight text-slate-900">Employee Dashboard</h1>
+          <p className="mt-2 text-slate-600">Track your attendance, leaves, and payslips easily.</p>
         </div>
-        <button
-          onClick={() => {
-            logout();
-            router.replace("/login");
-          }}
-          className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm text-slate-700 shadow-sm transition hover:shadow"
-        >
-          Logout
-        </button>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader title="Today’s Status" subtitle="Current day" />
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <Card hover>
+          <CardHeader 
+            title="Today's Status" 
+            subtitle="Current day"
+            icon={<Clock8 className={checkedIn ? "text-green-600" : "text-amber-600"} size={20} />}
+          />
           <CardContent>
-            <div className="flex items-center gap-3">
-              <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${
-                checkedIn ? "bg-green-50 text-green-700" : "bg-amber-50 text-amber-700"
-              }`}>{checkedIn ? "Present" : "Not Checked-In"}</span>
-              <span className="text-xs text-slate-500">
-                {data?.checkIn ? data.checkIn.timestamp.toDate().toLocaleTimeString() : (timestamp || "—")}
+            <div className="space-y-3">
+              <span className={`inline-flex items-center rounded-full px-3 py-1.5 text-xs font-semibold ${
+                checkedIn ? "bg-green-100 text-green-700 border border-green-200" : "bg-amber-100 text-amber-700 border border-amber-200"
+              }`}>
+                {checkedIn ? "✓ Present" : "○ Not Checked-In"}
               </span>
+              {data?.checkIn && (
+                <div className="text-xs text-slate-600">
+                  Checked in: <span className="font-medium">{data.checkIn.timestamp.toDate().toLocaleTimeString()}</span>
+                </div>
+              )}
+              {currentUser && (
+                <div className="text-xs text-slate-500 pt-1 border-t border-slate-100">
+                  Welcome, <span className="font-medium text-slate-700">{currentUser.name}</span>
+                </div>
+              )}
+              {displayTotal && (
+                <div className="text-sm font-semibold text-slate-900 pt-2 border-t border-slate-100">
+                  {data?.checkOut ? "Total hours" : "Working so far"}: <span className="text-blue-600">{displayTotal}h</span>
+                </div>
+              )}
             </div>
-            {currentUser && (
-              <div className="text-xs text-slate-500 mt-1">
-                Welcome, {currentUser.name}
-              </div>
-            )}
-            {displayTotal && (
-              <div className="mt-2 text-xs text-slate-500">
-                {data?.checkOut ? "Total hours" : "Working so far"}: {displayTotal}
-              </div>
-            )}
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader title="Total Working Days" subtitle="This month" />
+        <Card hover>
+          <CardHeader 
+            title="Total Working Days" 
+            subtitle="This month"
+            icon={<CalendarDays className="text-blue-600" size={20} />}
+          />
           <CardContent>
-            <div className="text-2xl font-semibold">18</div>
+            <div className="text-4xl font-bold text-slate-900">18</div>
+            <p className="mt-2 text-xs text-slate-500">Days worked</p>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader title="Total Leaves Taken" subtitle="This year" />
+        <Card hover>
+          <CardHeader 
+            title="Total Leaves Taken" 
+            subtitle="This year"
+            icon={<Leaf className="text-emerald-600" size={20} />}
+          />
           <CardContent>
-            <div className="text-2xl font-semibold">4</div>
+            <div className="text-4xl font-bold text-slate-900">4</div>
+            <p className="mt-2 text-xs text-slate-500">Leave days used</p>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader title="Upcoming Holidays" subtitle="Next 30 days" />
+        <Card hover>
+          <CardHeader 
+            title="Upcoming Holidays" 
+            subtitle="Next 30 days"
+            icon={<CalendarDays className="text-purple-600" size={20} />}
+          />
           <CardContent>
-            <ul className="text-sm text-slate-700">
-              <li className="flex items-center gap-2"><CalendarDays size={16} className="text-blue-600" /> Nov 05 - Diwali</li>
-              <li className="flex items-center gap-2"><CalendarDays size={16} className="text-blue-600" /> Nov 25 - Founders Day</li>
+            <ul className="space-y-2 text-sm">
+              <li className="flex items-center gap-2 text-slate-700">
+                <CalendarDays size={14} className="text-purple-500" /> 
+                <span>Nov 05 - Diwali</span>
+              </li>
+              <li className="flex items-center gap-2 text-slate-700">
+                <CalendarDays size={14} className="text-purple-500" /> 
+                <span>Nov 25 - Founders Day</span>
+              </li>
             </ul>
           </CardContent>
         </Card>
       </div>
 
-      <Card>
-        <CardHeader title="Quick Actions" />
+      <Card hover>
+        <CardHeader 
+          title="Check In / Check Out" 
+          subtitle="Mark your attendance"
+          icon={<Clock8 className="text-blue-600" size={20} />}
+        />
         <CardContent>
           <div className="space-y-4">
             {/* Enhanced Check-in Widget */}
-            <div className="rounded-lg border border-slate-200 bg-white p-4 space-y-3">
+            <div className="rounded-xl border border-slate-200 bg-gradient-to-br from-blue-50/50 to-indigo-50/50 p-6 space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-sm font-semibold text-slate-900">Check In / Check Out</h3>
-                  <p className="text-xs text-slate-500">Current time: <span suppressHydrationWarning>{nowStr || "—"}</span></p>
+                  <h3 className="text-base font-semibold text-slate-900">Current Time</h3>
+                  <p className="text-2xl font-bold text-blue-600 mt-1" suppressHydrationWarning>{nowStr || "—"}</p>
                 </div>
                 {checkedIn && runningHours && (
-                  <div className="text-right">
-                    <div className="text-xs text-slate-500">Working</div>
-                    <div className="text-lg font-semibold text-blue-600">{runningHours}h</div>
+                  <div className="text-right bg-white/80 rounded-lg px-4 py-3 border border-blue-200">
+                    <div className="text-xs text-slate-500 font-medium">Working Time</div>
+                    <div className="text-2xl font-bold text-blue-600">{runningHours}h</div>
                   </div>
                 )}
               </div>
               
               {data?.checkIn && (
-                <div className="text-xs text-slate-600">
-                  Checked in: {data.checkIn.timestamp.toDate().toLocaleTimeString()}
+                <div className="flex items-center gap-2 text-sm text-slate-700 bg-white/80 rounded-lg px-3 py-2 border border-slate-200">
+                  <Clock8 size={14} className="text-green-600" />
+                  <span>Checked in: <span className="font-semibold">{data.checkIn.timestamp.toDate().toLocaleTimeString()}</span></span>
                 </div>
               )}
               {data?.checkOut && (
-                <div className="text-xs text-slate-600">
-                  Checked out: {data.checkOut.timestamp.toDate().toLocaleTimeString()}
-                  {displayTotal && <span className="ml-2">• Total: {displayTotal}h</span>}
+                <div className="flex items-center gap-2 text-sm text-slate-700 bg-white/80 rounded-lg px-3 py-2 border border-slate-200">
+                  <Clock8 size={14} className="text-blue-600" />
+                  <span>Checked out: <span className="font-semibold">{data.checkOut.timestamp.toDate().toLocaleTimeString()}</span></span>
+                  {displayTotal && <span className="ml-auto font-semibold text-blue-600">Total: {displayTotal}h</span>}
                 </div>
               )}
               
-              <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-700 shadow-sm w-fit">
-                <MapPin size={14} className={gpsOk ? "text-green-600" : "text-amber-600"} />
-                GPS {gpsOk ? "Captured" : "Not Available"}
+              <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm">
+                <MapPin size={16} className={gpsOk ? "text-green-600" : "text-amber-600"} />
+                <span>GPS {gpsOk ? "Captured" : "Not Available"}</span>
               </div>
               
               {(checkInError || checkOutError) && (
-                <div className="text-xs text-red-600 bg-red-50 border border-red-200 rounded px-2 py-1">
+                <div className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-4 py-3">
                   {(checkInError || checkOutError)?.message || "An error occurred. Please try again."}
                 </div>
               )}
               
               <Button
                 className="w-full"
+                size="lg"
                 onClick={(e) => {
                   e.preventDefault();
                   console.log("Button clicked, disabled:", isDisabled);
@@ -330,7 +356,7 @@ export default function EmployeeDashboardPage() {
                 disabled={isDisabled}
                 type="button"
               >
-                <Clock8 className="mr-2" size={16} />
+                <Clock8 className="mr-2" size={18} />
                 {buttonText}
               </Button>
             </div>
@@ -338,32 +364,76 @@ export default function EmployeeDashboardPage() {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader title="Weekly Hours Worked" subtitle="Last 7 days" />
-        <CardContent>
-          <div className="h-64 w-full" style={{ minWidth: 0, minHeight: 0 }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={weeklyData}>
-                <XAxis dataKey="name" tick={{ fill: "#475569", fontSize: 12 }} tickLine={false} axisLine={{ stroke: "#E2E8F0" }} />
-                <YAxis tick={{ fill: "#475569", fontSize: 12 }} tickLine={false} axisLine={{ stroke: "#E2E8F0" }} />
-                <Tooltip cursor={{ fill: "#EEF2FF" }} />
-                <Bar dataKey="hours" fill="#2563eb" radius={[6, 6, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Card hover>
+          <CardHeader 
+            title="Weekly Hours Worked" 
+            subtitle="Last 7 days"
+            icon={<CalendarDays className="text-blue-600" size={20} />}
+          />
+          <CardContent>
+            <div className="h-64 w-full" style={{ minWidth: 0, minHeight: 0 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={weeklyData}>
+                  <XAxis 
+                    dataKey="name" 
+                    tick={{ fill: "#64748b", fontSize: 11 }} 
+                    tickLine={false} 
+                    axisLine={{ stroke: "#E2E8F0" }} 
+                  />
+                  <YAxis 
+                    tick={{ fill: "#64748b", fontSize: 11 }} 
+                    tickLine={false} 
+                    axisLine={{ stroke: "#E2E8F0" }} 
+                  />
+                  <Tooltip 
+                    cursor={{ fill: "#EEF2FF" }}
+                    contentStyle={{ 
+                      backgroundColor: 'white', 
+                      border: '1px solid #E2E8F0', 
+                      borderRadius: '8px',
+                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                    }}
+                  />
+                  <Bar dataKey="hours" fill="#2563eb" radius={[8, 8, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
 
-      <Card>
-        <CardHeader title="Quick Access" />
-        <CardContent>
-          <div className="flex flex-wrap gap-3 text-sm">
-            <a href="/employee/leave" className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1.5 text-blue-700 transition hover:bg-blue-100"><Leaf size={16} /> Apply Leave</a>
-            <a href="/employee/payslips" className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1.5 text-blue-700 transition hover:bg-blue-100">💰 View Payslip</a>
-            <a href="/employee/attendance-history" className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1.5 text-blue-700 transition hover:bg-blue-100">📅 Attendance Report</a>
-          </div>
-        </CardContent>
-      </Card>
+        <Card hover>
+          <CardHeader 
+            title="Quick Access" 
+            icon={<Leaf className="text-blue-600" size={20} />}
+          />
+          <CardContent>
+            <div className="space-y-3">
+              <a 
+                href="/employee/leave" 
+                className="flex items-center gap-3 rounded-lg bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 px-4 py-3 text-blue-700 font-medium transition-all hover:from-blue-100 hover:to-indigo-100 hover:shadow-sm"
+              >
+                <Leaf size={18} /> 
+                <span>Apply Leave</span>
+              </a>
+              <a 
+                href="/employee/payslips" 
+                className="flex items-center gap-3 rounded-lg bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 px-4 py-3 text-blue-700 font-medium transition-all hover:from-blue-100 hover:to-indigo-100 hover:shadow-sm"
+              >
+                <Wallet size={18} /> 
+                <span>View Payslip</span>
+              </a>
+              <a 
+                href="/employee/attendance-history" 
+                className="flex items-center gap-3 rounded-lg bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 px-4 py-3 text-blue-700 font-medium transition-all hover:from-blue-100 hover:to-indigo-100 hover:shadow-sm"
+              >
+                <CalendarDays size={18} /> 
+                <span>Attendance Report</span>
+              </a>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
