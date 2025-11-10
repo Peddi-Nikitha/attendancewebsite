@@ -50,7 +50,7 @@ export default function EmployeeProfilePage() {
     firstName: emp?.firstName || "",
     lastName: emp?.lastName || "",
     email: userProfile?.email || emp?.email || effectiveEmail || "",
-    phone: userProfile?.phoneNumber || emp?.phone || "",
+    phone: userProfile?.phoneNumber || emp?.phoneNumber || "",
     department: emp?.department || userProfile?.department || "",
     designation: emp?.designation || userProfile?.designation || "",
     managerId: emp?.managerId || userProfile?.managerId || "",
@@ -142,6 +142,7 @@ export default function EmployeeProfilePage() {
         if (form.managerId) employeeUpdates.managerId = form.managerId;
         if (form.dateOfBirth) employeeUpdates.dateOfBirth = form.dateOfBirth;
         if (form.address) employeeUpdates.address = form.address;
+        if (form.phone) employeeUpdates.phoneNumber = form.phone;
         
         try {
           await updateEmployee(employeeDocId, employeeUpdates);
@@ -163,6 +164,7 @@ export default function EmployeeProfilePage() {
               managerId: form.managerId || undefined,
               dateOfBirth: form.dateOfBirth || undefined,
               address: form.address || undefined,
+              phoneNumber: form.phone || undefined,
               joinDate: emp?.joinDate || userProfile?.hireDate || new Date().toISOString().split('T')[0],
               isActive: true,
             } as any);

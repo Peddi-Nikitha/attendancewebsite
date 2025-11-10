@@ -83,15 +83,48 @@ export default function EmployeeDocumentsPage() {
                       </div>
                     </div>
                   </div>
-                  <a
-                    href={doc.fileUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  <button
+                    onClick={async () => {
+                      if (!doc.fileUrl) {
+                        alert("Document URL not available");
+                        return;
+                      }
+                      
+                      try {
+                        // Try to download the file
+                        const fileName = doc.name || doc.filePath.split('/').pop() || 'document';
+                        
+                        // Fetch the file as a blob
+                        const response = await fetch(doc.fileUrl);
+                        if (!response.ok) {
+                          throw new Error('Failed to fetch document');
+                        }
+                        
+                        const blob = await response.blob();
+                        const blobUrl = window.URL.createObjectURL(blob);
+                        
+                        // Create a temporary anchor element to trigger download
+                        const link = document.createElement('a');
+                        link.href = blobUrl;
+                        link.download = fileName;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        
+                        // Clean up the blob URL
+                        window.URL.revokeObjectURL(blobUrl);
+                      } catch (error: any) {
+                        console.error('Download error:', error);
+                        // Fallback: open in new tab if download fails
+                        window.open(doc.fileUrl, '_blank', 'noopener,noreferrer');
+                        alert("Download failed. Opening document in new tab instead.");
+                      }
+                    }}
                     className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors flex-shrink-0"
                   >
                     <Download className="w-4 h-4" />
                     Download
-                  </a>
+                  </button>
                 </div>
               ))}
             </div>

@@ -32,6 +32,7 @@ export interface Employee {
   joinDate: string;
   dateOfBirth?: string; // YYYY-MM-DD format
   address?: string;
+  phoneNumber?: string; // Phone/mobile number
   salary?: { basic: number; allowances: number; deductions: number };
   leaveBalance?: {
     casual: number;

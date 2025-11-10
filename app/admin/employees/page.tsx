@@ -13,7 +13,7 @@ export default function AdminEmployeesPage() {
   const [dept, setDept] = useState("");
   const [role, setRole] = useState("");
   const { employees, loading } = useEmployees();
-  const [draft, setDraft] = useState<Omit<StoreEmployee, "id"> & { firstName?: string; lastName?: string; dateOfBirth?: string }>({ 
+  const [draft, setDraft] = useState<Omit<StoreEmployee, "id"> & { firstName?: string; lastName?: string; dateOfBirth?: string; phoneNumber?: string }>({ 
     name: "", 
     email: "", 
     department: "", 
@@ -22,6 +22,7 @@ export default function AdminEmployeesPage() {
     firstName: "",
     lastName: "",
     dateOfBirth: "",
+    phoneNumber: "",
   });
   const [password, setPassword] = useState("");
   const [creating, setCreating] = useState(false);
@@ -69,13 +70,22 @@ export default function AdminEmployeesPage() {
               onChange={(e) => setDraft((d) => ({ ...d, dateOfBirth: e.target.value }))} 
             />
           </div>
-          <div className="grid gap-4 sm:grid-cols-4 mt-4">
+          <div className="grid gap-4 sm:grid-cols-3 mt-4">
             <input 
               className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition sm:col-span-2" 
               placeholder="Email" 
               value={draft.email} 
               onChange={(e) => setDraft((d) => ({ ...d, email: e.target.value }))} 
             />
+            <input 
+              type="tel"
+              className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition" 
+              placeholder="Mobile Number" 
+              value={draft.phoneNumber} 
+              onChange={(e) => setDraft((d) => ({ ...d, phoneNumber: e.target.value }))} 
+            />
+          </div>
+          <div className="grid gap-4 sm:grid-cols-3 mt-4">
             <input 
               className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition" 
               placeholder="Department" 
@@ -90,8 +100,6 @@ export default function AdminEmployeesPage() {
               <option value="employee">Employee</option>
               <option value="admin">Admin</option>
             </select>
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2 mt-4">
             <input 
               type="password" 
               className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition" 
@@ -99,8 +107,10 @@ export default function AdminEmployeesPage() {
               value={password} 
               onChange={(e) => setPassword(e.target.value)} 
             />
+          </div>
+          <div className="mt-4">
             <input 
-              className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition" 
+              className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition" 
               placeholder="Full Name (optional, auto-filled from first/last)" 
               value={draft.name} 
               onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))} 
@@ -167,6 +177,7 @@ export default function AdminEmployeesPage() {
                       if (draft.firstName) updates.firstName = draft.firstName;
                       if (draft.lastName) updates.lastName = draft.lastName;
                       if (draft.dateOfBirth) updates.dateOfBirth = draft.dateOfBirth;
+                      if (draft.phoneNumber) updates.phoneNumber = draft.phoneNumber;
                       
                       if (Object.keys(updates).length > 0) {
                         await updateEmployee(createdEmp.id, updates);
@@ -174,7 +185,7 @@ export default function AdminEmployeesPage() {
                     }
                     
                     setCreateInfo("Employee created successfully. They can log in with the provided password.");
-                    setDraft({ name: "", email: "", department: "", role: "employee", manager: "", firstName: "", lastName: "", dateOfBirth: "" });
+                    setDraft({ name: "", email: "", department: "", role: "employee", manager: "", firstName: "", lastName: "", dateOfBirth: "", phoneNumber: "" });
                     setPassword("");
                     return;
                   } catch (cfError: any) {
@@ -188,11 +199,12 @@ export default function AdminEmployeesPage() {
                     role: draft.role as 'employee' | 'admin',
                     department: draft.department,
                     designation: draft.department, // Use department as designation if not provided
+                    phoneNumber: draft.phoneNumber || undefined,
                     employeeId: employeeId,
                     hireDate: new Date().toISOString().split('T')[0],
                   });
                   
-                  // Update employee document with additional fields (firstName, lastName, dateOfBirth)
+                  // Update employee document with additional fields (firstName, lastName, dateOfBirth, phoneNumber)
                   // The employee document is created at employees/{user.uid} by signUp
                   if (firebaseUser.uid) {
                     try {
@@ -200,6 +212,7 @@ export default function AdminEmployeesPage() {
                       if (draft.firstName) updates.firstName = draft.firstName;
                       if (draft.lastName) updates.lastName = draft.lastName;
                       if (draft.dateOfBirth) updates.dateOfBirth = draft.dateOfBirth;
+                      if (draft.phoneNumber) updates.phoneNumber = draft.phoneNumber;
                       
                       if (Object.keys(updates).length > 0) {
                         await updateEmployee(firebaseUser.uid, updates);
@@ -211,7 +224,7 @@ export default function AdminEmployeesPage() {
                   }
                   
                   setCreateInfo("Employee created successfully in Firebase. They can log in with email: " + emailLower + " and the provided password.");
-                  setDraft({ name: "", email: "", department: "", role: "employee", manager: "", firstName: "", lastName: "", dateOfBirth: "" });
+                  setDraft({ name: "", email: "", department: "", role: "employee", manager: "", firstName: "", lastName: "", dateOfBirth: "", phoneNumber: "" });
                   setPassword("");
                   return;
                 } catch (authError: any) {
