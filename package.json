@@ -5,7 +5,9 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "build:production": "next build",
+    "start": "next start",
+    "build:static": "next build"
   },
   "dependencies": {
     "date-fns": "^4.1.0",
