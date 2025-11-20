@@ -1,6 +1,5 @@
 "use client";
 import React from "react";
-import Link from "next/link";
 import { 
   Clock, 
   Shield, 
@@ -47,11 +46,11 @@ export default function LandingPage() {
               </a>
             </div>
             <div className="flex items-center gap-4">
-              <Link href="/login">
+              <a href="/login">
                 <Button className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white border-0 shadow-lg hover:shadow-xl transition-all">
                   Sign In
                 </Button>
-              </Link>
+              </a>
             </div>
           </div>
         </div>
@@ -86,12 +85,12 @@ export default function LandingPage() {
             </p>
             
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12 animate-fade-in">
-              <Link href="/login">
+              <a href="/login">
                 <Button className="w-full sm:w-auto px-8 py-4 text-lg bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-xl hover:shadow-2xl transition-all transform hover:scale-105">
                   Get Started Free
                   <ArrowRight className="ml-2 w-5 h-5" />
                 </Button>
-              </Link>
+              </a>
               <Button className="w-full sm:w-auto px-8 py-4 text-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white border-2 border-slate-300 dark:border-slate-700 hover:border-blue-500 shadow-lg hover:shadow-xl transition-all">
                 Watch Demo
               </Button>
@@ -448,12 +447,12 @@ export default function LandingPage() {
             Join thousands of companies already using Attendance Pro to streamline their workforce management.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link href="/login">
+            <a href="/login">
               <Button className="w-full sm:w-auto px-8 py-4 text-lg bg-white text-blue-600 hover:bg-blue-50 shadow-xl hover:shadow-2xl transition-all transform hover:scale-105">
                 Start Free Trial
                 <ArrowRight className="ml-2 w-5 h-5" />
               </Button>
-            </Link>
+            </a>
             <Button className="w-full sm:w-auto px-8 py-4 text-lg bg-transparent border-2 border-white text-white hover:bg-white/10 shadow-lg transition-all">
               Schedule Demo
             </Button>

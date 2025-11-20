@@ -4,10 +4,11 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
-    "build:production": "next build",
+    "build": "next build && npm run copy-htaccess",
+    "build:production": "next build && npm run copy-htaccess",
+    "copy-htaccess": "node scripts/copy-htaccess.js",
     "start": "next start",
-    "build:static": "next build"
+    "build:static": "next build && npm run copy-htaccess"
   },
   "dependencies": {
     "date-fns": "^4.1.0",

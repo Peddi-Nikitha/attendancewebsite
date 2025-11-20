@@ -42,7 +42,7 @@ export default function Header() {
 							<div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
 							<div className="absolute right-0 mt-2 w-56 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl z-50 animate-fade-in">
 								<Link 
-									href="/employee/profile" 
+									href="/employee-profile" 
 									className="flex items-center gap-3 px-4 py-3 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
 									onClick={() => setOpen(false)}
 								>
@@ -59,7 +59,7 @@ export default function Header() {
 									className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-red-600 hover:bg-red-50 transition-colors"
 									onClick={() => {
 										logout();
-										router.push("/login");
+										window.location.href = "/login";
 									}}
 								>
 									<LogOut size={16} /> Logout

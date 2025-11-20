@@ -1,0 +1,104 @@
+<IfModule mod_rewrite.c>
+RewriteEngine On
+RewriteBase /
+
+# Disable directory browsing
+Options -Indexes
+
+# Set default index file
+DirectoryIndex index.html
+
+# Rewrite dashboard routes
+RewriteRule ^admin$ admin.html [L]
+RewriteRule ^admin/$ admin.html [L]
+RewriteRule ^employee$ employee.html [L]
+RewriteRule ^employee/$ employee.html [L]
+
+# Rewrite auth routes
+RewriteRule ^login$ login.html [L]
+RewriteRule ^login/$ login.html [L]
+RewriteRule ^forgot-password$ forgot-password.html [L]
+RewriteRule ^forgot-password/$ forgot-password.html [L]
+RewriteRule ^reset-password$ reset-password.html [L]
+RewriteRule ^reset-password/$ reset-password.html [L]
+RewriteRule ^verify-otp$ verify-otp.html [L]
+RewriteRule ^verify-otp/$ verify-otp.html [L]
+RewriteRule ^profile-setup$ profile-setup.html [L]
+RewriteRule ^profile-setup/$ profile-setup.html [L]
+
+# Rewrite hyphenated admin routes to actual file paths (flat structure)
+RewriteRule ^admin-employees$ admin-employees.html [L]
+RewriteRule ^admin-employees/$ admin-employees.html [L]
+RewriteRule ^admin-attendance$ admin-attendance.html [L]
+RewriteRule ^admin-attendance/$ admin-attendance.html [L]
+RewriteRule ^admin-timesheets$ admin-timesheets.html [L]
+RewriteRule ^admin-timesheets/$ admin-timesheets.html [L]
+RewriteRule ^admin-leaves$ admin-leaves.html [L]
+RewriteRule ^admin-leaves/$ admin-leaves.html [L]
+RewriteRule ^admin-payslips$ admin-payslips.html [L]
+RewriteRule ^admin-payslips/$ admin-payslips.html [L]
+RewriteRule ^admin-holidays$ admin-holidays.html [L]
+RewriteRule ^admin-holidays/$ admin-holidays.html [L]
+RewriteRule ^admin-reports$ admin-reports.html [L]
+RewriteRule ^admin-reports/$ admin-reports.html [L]
+RewriteRule ^admin-projects$ admin-projects.html [L]
+RewriteRule ^admin-projects/$ admin-projects.html [L]
+RewriteRule ^admin-settings$ admin-settings.html [L]
+RewriteRule ^admin-settings/$ admin-settings.html [L]
+RewriteRule ^admin-profile$ admin-profile.html [L]
+RewriteRule ^admin-profile/$ admin-profile.html [L]
+RewriteRule ^admin-employees/documents$ admin-employees/documents.html [L]
+RewriteRule ^admin-employees/documents/$ admin-employees/documents.html [L]
+RewriteRule ^admin-employees/documents\?id=(.*)$ admin-employees/documents.html?id=$1 [L]
+RewriteRule ^admin-employees/documents/(.*)$ admin-employees/documents/$1.html [L]
+
+# Rewrite hyphenated employee routes (flat structure)
+RewriteRule ^employee-mark-attendance$ employee-mark-attendance.html [L]
+RewriteRule ^employee-mark-attendance/$ employee-mark-attendance.html [L]
+RewriteRule ^employee-attendance-history$ employee-attendance-history.html [L]
+RewriteRule ^employee-attendance-history/$ employee-attendance-history.html [L]
+RewriteRule ^employee-timesheet$ employee-timesheet.html [L]
+RewriteRule ^employee-timesheet/$ employee-timesheet.html [L]
+RewriteRule ^employee-leave$ employee-leave.html [L]
+RewriteRule ^employee-leave/$ employee-leave.html [L]
+RewriteRule ^employee-payslips$ employee-payslips.html [L]
+RewriteRule ^employee-payslips/$ employee-payslips.html [L]
+RewriteRule ^employee-documents$ employee-documents.html [L]
+RewriteRule ^employee-documents/$ employee-documents.html [L]
+RewriteRule ^employee-profile$ employee-profile.html [L]
+RewriteRule ^employee-profile/$ employee-profile.html [L]
+RewriteRule ^employee-projects$ employee-projects.html [L]
+RewriteRule ^employee-projects/$ employee-projects.html [L]
+
+# Handle trailing slashes for other routes - remove and rewrite to .html
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_URI} ^(.+)/$
+RewriteCond %{DOCUMENT_ROOT}%1.html -f
+RewriteRule ^(.+)/$ /$1.html [L,R=301]
+
+# Handle routes without trailing slash - rewrite to .html
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{DOCUMENT_ROOT}%{REQUEST_URI}.html -f
+RewriteRule ^(.*)$ $1.html [L]
+
+# Serve existing files directly (images, CSS, JS, etc.)
+RewriteCond %{REQUEST_FILENAME} -f
+RewriteRule ^ - [L]
+
+# Handle directory requests - serve index.html if it exists
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteCond %{REQUEST_FILENAME}/index.html -f
+RewriteRule ^(.*)$ $1/index.html [L]
+
+# Final fallback - serve index.html for client-side routing
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ /index.html [L]
+</IfModule>
+
+# Security headers
+<IfModule mod_headers.c>
+  Header set X-Content-Type-Options "nosniff"
+  Header set X-Frame-Options "SAMEORIGIN"
+</IfModule>

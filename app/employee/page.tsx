@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { getCurrentUser, logout } from "../../lib/auth";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -409,27 +410,27 @@ export default function EmployeeDashboardPage() {
           />
           <CardContent>
             <div className="space-y-3">
-              <a 
-                href="/employee/leave" 
+              <Link 
+                href="/employee-leave" 
                 className="flex items-center gap-3 rounded-lg bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 px-4 py-3 text-blue-700 font-medium transition-all hover:from-blue-100 hover:to-indigo-100 hover:shadow-sm"
               >
                 <Leaf size={18} /> 
                 <span>Apply Leave</span>
-              </a>
-              <a 
-                href="/employee/payslips" 
+              </Link>
+              <Link 
+                href="/employee-payslips" 
                 className="flex items-center gap-3 rounded-lg bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 px-4 py-3 text-blue-700 font-medium transition-all hover:from-blue-100 hover:to-indigo-100 hover:shadow-sm"
               >
                 <Wallet size={18} /> 
                 <span>View Payslip</span>
-              </a>
-              <a 
-                href="/employee/attendance-history" 
+              </Link>
+              <Link 
+                href="/employee-attendance-history" 
                 className="flex items-center gap-3 rounded-lg bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 px-4 py-3 text-blue-700 font-medium transition-all hover:from-blue-100 hover:to-indigo-100 hover:shadow-sm"
               >
                 <CalendarDays size={18} /> 
                 <span>Attendance Report</span>
-              </a>
+              </Link>
             </div>
           </CardContent>
         </Card>

@@ -261,21 +261,21 @@ export default function AdminDashboardPage() {
           <CardContent>
             <div className="space-y-3">
               <a 
-                href="/admin/employees" 
+                href="/admin-employees" 
                 className="flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-3 text-center text-sm font-medium text-white shadow-md hover:shadow-lg transition-all"
               >
                 <Plus size={16} />
                 Add Employee
               </a>
               <a 
-                href="/admin/payslips" 
+                href="/admin-payslips" 
                 className="flex items-center justify-center gap-2 rounded-lg bg-slate-900 px-4 py-3 text-center text-sm font-medium text-white shadow-md hover:shadow-lg transition-all"
               >
                 <FileText size={16} />
                 Generate Payslip
               </a>
               <a 
-                href="/admin/reports" 
+                href="/admin-reports" 
                 className="flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-3 text-center text-sm font-medium text-slate-700 hover:bg-slate-50 transition-all shadow-sm hover:shadow"
               >
                 <BarChart3 size={16} />

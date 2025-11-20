@@ -148,7 +148,13 @@ This will create an `out` folder with static files.
 ### Step 3: Upload to IONOS
 
 1. Upload the entire contents of the `out` folder to your IONOS web directory (`htdocs` or `www`)
-2. Set your domain's document root to point to this directory
+2. **IMPORTANT:** Make sure the `.htaccess` file is included in the upload (it should be automatically copied during build)
+3. Set your domain's document root to point to this directory
+
+**Note:** The `.htaccess` file is essential for proper routing. It handles:
+- Converting route requests (e.g., `/admin/attendance`) to the correct HTML files (`admin/attendance.html`)
+- Fallback routing for client-side navigation
+- Proper handling of trailing slashes
 
 ### Step 4: Configure Environment Variables
 
@@ -192,17 +198,28 @@ Since static exports can't use server-side environment variables, you'll need to
    - Check firewall/security settings
    - Ensure port is accessible
 
+4. **404 Errors on Navigation (Static Export):**
+   - **Problem:** Getting "Not Found" errors when clicking links like `/admin/attendance`, `/admin/timesheets`, etc.
+   - **Solution:** 
+     - Ensure the `.htaccess` file is uploaded to your IONOS web directory
+     - Verify `.htaccess` file is in the root of your `out` folder (should be copied automatically during build)
+     - Check that IONOS supports `.htaccess` files (Apache servers do, but some configurations may disable it)
+     - If `.htaccess` is not working, contact IONOS support to enable `.htaccess` support
+     - Verify file permissions: `.htaccess` should be readable by the web server
+   - **Alternative:** If `.htaccess` doesn't work, you may need to configure URL rewriting in IONOS control panel or use a different hosting solution
+
 ---
 
 ## Quick Deployment Checklist
 
 - [ ] Build application locally (`npm run build`)
+- [ ] Verify `.htaccess` file is in `out` folder (for static export)
 - [ ] Set up environment variables
-- [ ] Upload files to IONOS
-- [ ] Install dependencies on server
-- [ ] Configure Node.js in IONOS control panel
+- [ ] Upload files to IONOS (including `.htaccess` file)
+- [ ] Install dependencies on server (if using Node.js hosting)
+- [ ] Configure Node.js in IONOS control panel (if using Node.js hosting)
 - [ ] Add domain to Firebase authorized domains
-- [ ] Test the application
+- [ ] Test the application and navigation (check all routes work)
 - [ ] Enable SSL certificate
 - [ ] Configure custom domain
 
