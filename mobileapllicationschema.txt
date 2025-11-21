@@ -1,0 +1,252 @@
+users:
+Fields (recommended)
+Field name	Type	Required	Description	Example
+uid	String	✅ Yes	Primary user id (Firebase Auth UID). Use as document id when possible.	"k1X3a..."
+email	String	✅ Yes	User email (from Firebase Auth).	"alice@example.com"
+display_name	String	✅ Yes	Short display name / username.	"Alice"
+full_name	String	❎ Recommended	Full legal name.	"Alice Kumar"
+photo_url	String (image path/url)	❎ Recommended	Storage path or public URL to profile photo.	"gs://.../avatars/alice.jpg" or HTTP URL
+phone_number	String	❎ Recommended	E.164 format preferred.	"+919876543210"
+employee_id	String	❎ Optional	Internal employee identifier.	"EMP-00124"
+department	String	❎ Optional	Department name or code.	"Sales"
+Gender	String	❎ Optional	male / female / other / prefer_not_to_say.	"female"
+dob	String (ISO date) or Timestamp	❎ Optional	Date of birth. Use ISO (YYYY-MM-DD) or Firestore Timestamp.	"1990-05-12" or Timestamp
+created_time	Timestamp	✅ Yes	When user doc was created.	Timestamp()
+checkin_status	Boolean	❎ Default: false	Whether user is currently checked in.	true
+checkin_time	Timestamp	❎ Optional	Latest check-in timestamp.	Timestamp()
+checkin_location	GeoPoint (LatLng)	❎ Optional	Location captured at check-in.	{ latitude: 12.9716, longitude: 77.5946 }
+checkout_time	Timestamp	❎ Optional	Latest check-out timestamp.	Timestamp()
+last_active	Timestamp	❎ Optional	Last time user performed activity (useful for presence).	Timestamp()
+roles	Array of Strings	❎ Optional	Roles like admin, employee, manager.	['employee']
+meta	Map/Object	❎ Optional	For extra non-queryable data (preferences, flags).	{ theme: 'dark' }
+{
+"uid": "k1X3a...",
+"email": "alice@example.com",
+"display_name": "Alice",
+"full_name": "Alice Kumar",
+"photo_url": "gs://my-bucket/avatars/alice.jpg",
+"phone_number": "+919876543210",
+"employee_id": "EMP-00124",
+"department": "Sales",
+"Gender": "female",
+"dob": "1990-05-12",
+"created_time": "2025-11-21T14:20:00Z",
+"checkin_status": true,
+"checkin_time": "2025-11-21T09:02:00Z",
+"checkin_location": { "latitude": 12.9715987, "longitude": 77.5945627 },
+"checkout_time": null,
+"roles": ["employee"],
+"meta": { "timezone": "Asia/Kolkata" }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+attendance 
+fields
+Field Name	Type	Required	Description
+user_id	Document Reference (users/{uid})	✅ Yes	Links attendance entry to a specific user.
+checkin_time	Timestamp	Optional	When the user checked in.
+checkout_time	Timestamp	Optional	When the user checked out.
+checkin_location	GeoPoint (LatLng)	Optional	GPS captured at check-in.
+checkout_location	GeoPoint (LatLng)	Optional	GPS captured at check-out.
+date	String (YYYY-MM-DD) OR Timestamp	✅ Recommended	Unique date identifier for the record.
+work_duration_minutes	Number	Optional	Auto-calculated (checkout–checkin).
+status	String	Recommended	present, absent, leave, half-day.
+
+
+{
+  "user_id": "users/k1X3aabcd",
+  "date": "2025-11-21",
+  "checkin_time": "2025-11-21T09:02:00Z",
+  "checkout_time": "2025-11-21T18:01:00Z",
+  "checkin_location": { "latitude": 12.9716, "longitude": 77.5946 },
+  "checkout_location": { "latitude": 12.9715, "longitude": 77.5948 },
+  "work_duration_minutes": 539,
+  "status": "present"
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+leave   
+Field Name	Type	Required	Description	Example
+user_id	Document Reference (users)	Yes	The employee who is applying for leave	/users/abc123
+start_date	DateTime	Yes	Start date of the leave	2025-01-05
+end_date	DateTime	Yes	End date of the leave	2025-01-07
+reason	String	Yes	Reason for leave	"Fever and cold"
+leave_type	String	Yes	Type of leave	"Sick Leave", "Casual Leave"
+status	String	Yes	Current leave status	"pending", "approved", "rejected"
+created_at	DateTime	Yes	Timestamp when leave was created	2025-01-02T10:00:00
+updated_at	DateTime	Yes	Timestamp when leave was last updated	2025-01-02T10:20:00
+days_count	Number	No (auto)	Auto-calculated total number of leave days	3
+approved_by	Document Reference (users)	No	Admin who approved/rejected the leave	/users/admin123
+comments	String	No	Admin remarks	"Take rest"
+
+
+leave/
+   LEAVE_DOCUMENT_ID/
+      user_id: /users/USER_DOC_ID
+      start_date: 2025-01-05
+      end_date: 2025-01-07
+      reason: "Fever"
+      leave_type: "Sick Leave"
+      status: "pending"
+      created_at: 2025-01-02T10:00:00
+      updated_at: 2025-01-02T10:00:00
+      days_count: 3
+      approved_by: null
+      comments: ""
+
+
+
+
+
+
+
+
+leave_balance:
+
+
+Field name	Type	Required	Description	Example
+user_id	Document Reference (users)	Yes	Reference to the employee document	/users/abc123
+year	Integer	Yes	Financial / calendar year for the balance	2025
+sick_leave	Integer	No (recommended)	Remaining sick leave days for the year	8
+casual_leave	Integer	No (recommended)	Remaining casual/paid leave days	6
+medical_leave	Integer	No (recommended)	Remaining medical/extra paid days (if separate)	2
+earned_leave	Integer	No	Remaining earned/privileged leave days	10
+total_leave	Integer	Yes	Total allocated leave for the year (sum of types or policy value)	26
+used_leave	Integer	No (auto)	Total leave days used so far in the year	5
+carry_forward	Integer	No	Days carried forward from previous year (if policy allows)	3
+pending_applied	Integer	No	Days currently applied but not yet approved (to block double-booking)	2
+updated_at	DateTime	Yes	Last updated timestamp (set server-side)	2025-06-01T08:30:00Z
+created_at	DateTime	Yes	Creation timestamp (set server-side)	2024-01-01T09:00:00Z
+notes	String	No	Any admin notes about balances or exceptions	"Pro-rated for joining in March"
+
+
+
+
+
+
+
+
+Timesheet
+
+Field name	Type	Required	Description	Example
+user_id	Document Reference (users)	Yes	Reference to the employee who logged the timesheet	/users/abc123
+taskdate	DateTime	Yes	The calendar date the task belongs to (date only or start of day)	2025-06-01
+start_time	DateTime	No* (required if using time tracking)	Start timestamp of the work slot	2025-06-01T09:00:00Z
+end_time	DateTime	No* (required if using time tracking)	End timestamp of the work slot	2025-06-01T17:30:00Z
+duration_hours	Number	Yes (auto or set)	Calculated total hours for the slot (decimal allowed)	8.5
+activity	String	Yes	Short title of the activity or task	"Feature: Timesheet UI"
+description	String	No	Detailed description of work done	"Implemented start/end picker and validation."
+project_id	Document Reference (projects)	No	If work is tied to a project or client	/projects/proj123
+tags	Array of String	No	Labels to categorize (e.g., billable, meeting)	["billable","clientA"]
+status	String	Yes	Approval workflow: draft / submitted / approved / rejected	"submitted"
+overtime_hours	Number	No	Extra hours beyond scheduled / policy	1.5
+break_minutes	Integer	No	Total break minutes taken during the slot	30
+is_billable	Boolean	No	Marks whether this entry is billable to client	true
+created_at	DateTime	Yes	Server timestamp when record was created	2025-06-01T09:00:01Z
+updated_at	DateTime	Yes	Server timestamp when last updated	2025-06-01T18:00:00Z
+approved_by	Document Reference (users)	No	Admin/manager who approved the timesheet	/users/manager123
+notes	String	No	Manager comments or employee notes	"Approved for invoicing."
+
+
+
+
+
+
+
+
+
+salarypackage:
+
+Field name	Type	Required	Description	Example
+user_id	Document Reference (users)	Yes	Links salary package to the employee	/users/abc123
+yearly_salary	Integer	Yes	Total CTC (Cost to Company) for the year	600000
+monthly_salary	Integer	Yes	Monthly base salary before deductions	50000
+basic_salary	Integer	No (Recommended)	Basic component of salary	25000
+hra	Integer	No	House Rent Allowance	10000
+special_allowance	Integer	No	Additional allowance amount	8000
+bonus	Integer	No	Annual bonus amount	30000
+pf_number	String	No	Employee’s PF account number	"PF12345678"
+pf_employee	Integer	No	Employee PF contribution per month	1800
+pf_employer	Integer	No	Employer PF contribution per month	1800
+esi_employee	Integer	No	Employee ESI contribution	300
+esi_employer	Integer	No	Employer ESI contribution	300
+tax_deduction	Integer	No	Approx monthly TDS or tax	2000
+lop_rate_per_day	Integer	No	Salary deduction per day when on unpaid leave	1500
+created_at	DateTime	Yes	Timestamp when salary package added	2025-01-01T10:00:00Z
+updated_at	DateTime	Yes	Timestamp when package updated	2025-02-01T11:30:00Z
+notes	String	No	HR/Finance notes	"Revised salary from April 2025"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+payslip:
+
+
+
+Field name	Type	Required	Description	Example
+user_id	Document Reference (users)	Yes	Reference to the employee the payslip belongs to	/users/abc123
+payslip_id	String	Yes	Unique payslip identifier (doc id or custom)	PSLP-2025-06-0001
+month	Integer	Yes	Month of the payslip (1–12)	6
+year	Integer	Yes	Year of the payslip	2025
+title	String	No	Short title or label for the payslip	June 2025 Payslip
+gross_salary	Integer	Yes	Total gross earnings for the month	50000
+total_deductions	Integer	Yes	Sum of all deductions (tax, PF, ESI, etc.)	6200
+net_salary	Integer	Yes	Amount payable after deductions	43800
+components	Map / Object	Yes	Detailed salary breakup (basic, HRA, allowances, bonus)	{ basic:25000, hra:10000, special:8000 }
+deduction_breakup	Map / Object	No	Detailed deductions (pf, tax, esi, loan)	{ pf:1800, tax:2000, esi:300 }
+lop_days	Number	No	Days of unpaid leave in month (for LOP calculation)	1
+lop_amount	Integer	No	Deduction amount for LOP days	1500
+is_generated	Boolean	Yes	Whether payslip PDF has been generated	true
+url	String	No	Storage path / URL of generated payslip file (use your storage URL)	/mnt/data/73294199-ec39-49ab-afea-57c1e27cce51.png
+generated_by	Document Reference (users)	No	HR/Finance user who generated the payslip	/users/hr123
+created_at	DateTime	Yes	Server timestamp when payslip created	2025-06-30T09:00:00Z
+updated_at	DateTime	Yes	Server timestamp of last update	2025-06-30T09:05:00Z
+notes	String	No	Any HR/finance notes about the payslip	"Pro-rated for joining mid-month"
+
