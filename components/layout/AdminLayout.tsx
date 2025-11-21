@@ -16,6 +16,7 @@ import {
   LogOut,
   User,
   ChevronDown,
+  Upload,
 } from "lucide-react";
 
 const nav = [
@@ -23,6 +24,7 @@ const nav = [
   { href: "/admin-employees", label: "Employee Management", icon: Users },
   { href: "/admin-attendance", label: "Attendance", icon: ClipboardList },
   { href: "/admin-timesheets", label: "Timesheets", icon: Clock },
+  { href: "/admin-timesheet-import", label: "Import Timesheets", icon: Upload },
   { href: "/admin-leaves", label: "Leaves", icon: Leaf },
   { href: "/admin-payslips", label: "Payslips", icon: Wallet },
   { href: "/admin-holidays", label: "Holidays", icon: Calendar },

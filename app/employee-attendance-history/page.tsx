@@ -198,7 +198,7 @@ export default function EmployeeAttendanceHistoryPage() {
     return counts;
   }, [leaveRequests, monthStart, monthEnd]);
 
-  // Build daily hours for the current month from attendance (check-in/check-out)
+  // Build daily hours for the current month from attendance (check-in/check-out, excluding lunch break)
   const dailyHours = useMemo(() => {
     const hoursByDate = new Map<string, number>();
     if (attendanceRecords) {
@@ -212,7 +212,16 @@ export default function EmployeeAttendanceHistoryPage() {
           try {
             const inMs = r.checkIn.timestamp.toMillis();
             const outMs = r.checkOut.timestamp.toMillis();
-            const diffHours = (outMs - inMs) / (1000 * 60 * 60);
+            let diffHours = (outMs - inMs) / (1000 * 60 * 60);
+            
+            // Subtract lunch break time if it exists
+            if (r.lunchBreak?.start && r.lunchBreak?.end) {
+              const lunchStartMs = r.lunchBreak.start.toMillis();
+              const lunchEndMs = r.lunchBreak.end.toMillis();
+              const lunchHours = (lunchEndMs - lunchStartMs) / (1000 * 60 * 60);
+              diffHours -= lunchHours;
+            }
+            
             hours = Math.max(0, Number(diffHours.toFixed(2)));
           } catch {}
         }

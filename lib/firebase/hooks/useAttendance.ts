@@ -5,6 +5,8 @@ import {
   listenTodayAttendance, 
   checkIn as svcCheckIn, 
   checkOut as svcCheckOut,
+  startLunchBreak as svcStartLunchBreak,
+  endLunchBreak as svcEndLunchBreak,
   listenEmployeeAttendanceRecords,
   listenAllAttendanceRecords
 } from "@/lib/firebase/services/attendance";
@@ -154,6 +156,62 @@ export function useAllAttendanceRecords(limitCount: number = 1000) {
   }, [limitCount]);
 
   return { data, loading, error } as const;
+}
+
+export function useStartLunchBreak() {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+  const [success, setSuccess] = useState(false);
+
+  async function mutate(employeeId: string) {
+    setLoading(true);
+    setError(null);
+    setSuccess(false);
+    try {
+      await svcStartLunchBreak(employeeId);
+      setSuccess(true);
+    } catch (e) {
+      setError(e instanceof Error ? e : new Error("Failed to start lunch break"));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function reset() {
+    setLoading(false);
+    setError(null);
+    setSuccess(false);
+  }
+
+  return { mutate, loading, error, success, reset } as const;
+}
+
+export function useEndLunchBreak() {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+  const [success, setSuccess] = useState(false);
+
+  async function mutate(employeeId: string) {
+    setLoading(true);
+    setError(null);
+    setSuccess(false);
+    try {
+      await svcEndLunchBreak(employeeId);
+      setSuccess(true);
+    } catch (e) {
+      setError(e instanceof Error ? e : new Error("Failed to end lunch break"));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function reset() {
+    setLoading(false);
+    setError(null);
+    setSuccess(false);
+  }
+
+  return { mutate, loading, error, success, reset } as const;
 }
 
 

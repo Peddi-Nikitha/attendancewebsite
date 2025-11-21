@@ -5,9 +5,9 @@ import { getCurrentUser } from "../../../lib/auth";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { useEmployeeAttendanceRecords } from "@/lib/firebase/hooks/useAttendance";
 
-function exportCsv(rows: { date: string; in?: string; out?: string; total: string }[]) {
-  const header = ["Date", "In", "Out", "Total Hours"]; 
-  const data = rows.map((r) => [r.date, r.in || "", r.out || "", r.total]);
+function exportCsv(rows: { date: string; in?: string; out?: string; lunchBreak?: string; total: string }[]) {
+  const header = ["Date", "In", "Out", "Lunch Break", "Total Hours"]; 
+  const data = rows.map((r) => [r.date, r.in || "", r.out || "", r.lunchBreak || "", r.total]);
   const csv = [header, ...data].map((r) => r.join(",")).join("\n");
   const uri = "data:text/csv;charset=utf-8," + encodeURIComponent(csv);
   const a = document.createElement("a");
@@ -102,18 +102,50 @@ export default function EmployeeTimesheetPage() {
         ? record.checkOut.timestamp.toDate().toLocaleTimeString()
         : undefined;
       
-      // Format total hours
+      // Format lunch break
+      let lunchBreak = "";
+      if (record.lunchBreak?.start) {
+        const lunchStart = record.lunchBreak.start.toDate().toLocaleTimeString();
+        if (record.lunchBreak.end) {
+          const lunchEnd = record.lunchBreak.end.toDate().toLocaleTimeString();
+          const duration = record.lunchBreak.duration;
+          if (duration !== undefined) {
+            const hours = Math.floor(duration);
+            const minutes = Math.floor((duration - hours) * 60);
+            const durationStr = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+            lunchBreak = `${lunchStart} - ${lunchEnd} (${durationStr})`;
+          } else {
+            lunchBreak = `${lunchStart} - ${lunchEnd}`;
+          }
+        } else {
+          lunchBreak = `${lunchStart} (Active)`;
+        }
+      }
+
+      // Format total hours (already excludes lunch break in backend)
       let total = "";
       if (record.totalHours !== undefined) {
         const hours = Math.floor(record.totalHours);
         const minutes = Math.floor((record.totalHours - hours) * 60);
         total = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
       } else if (record.checkIn && record.checkOut) {
-        // Calculate from timestamps if totalHours is not available
+        // Calculate from timestamps if totalHours is not available, excluding lunch break
         try {
           const inMs = record.checkIn.timestamp.toMillis();
           const outMs = record.checkOut.timestamp.toMillis();
-          const totalMs = outMs - inMs;
+          let totalMs = outMs - inMs;
+          
+          // Subtract lunch break time if it exists
+          if (record.lunchBreak?.start && record.lunchBreak?.end) {
+            const lunchStartMs = record.lunchBreak.start.toMillis();
+            const lunchEndMs = record.lunchBreak.end.toMillis();
+            totalMs -= (lunchEndMs - lunchStartMs);
+          } else if (record.lunchBreak?.start && !record.lunchBreak?.end) {
+            // If lunch break is still active, subtract time from start to checkout
+            const lunchStartMs = record.lunchBreak.start.toMillis();
+            totalMs -= (outMs - lunchStartMs);
+          }
+          
           const hours = Math.floor(totalMs / 3600000);
           const minutes = Math.floor((totalMs % 3600000) / 60000);
           total = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
@@ -135,6 +167,7 @@ export default function EmployeeTimesheetPage() {
         dateSort: record.date, // For sorting
         in: checkInTime,
         out: checkOutTime,
+        lunchBreak: lunchBreak || undefined,
         total,
       };
     });
@@ -219,6 +252,7 @@ export default function EmployeeTimesheetPage() {
                     <th className="border-b border-slate-200 px-3 py-2 font-medium">Date</th>
                     <th className="border-b border-slate-200 px-3 py-2 font-medium">In</th>
                     <th className="border-b border-slate-200 px-3 py-2 font-medium">Out</th>
+                    <th className="border-b border-slate-200 px-3 py-2 font-medium">Lunch Break</th>
                     <th className="border-b border-slate-200 px-3 py-2 font-medium">Total</th>
                   </tr>
                 </thead>
@@ -228,6 +262,7 @@ export default function EmployeeTimesheetPage() {
                       <td className="border-b border-slate-100 px-3 py-2 text-slate-800">{row.date}</td>
                       <td className="border-b border-slate-100 px-3 py-2">{row.in || "—"}</td>
                       <td className="border-b border-slate-100 px-3 py-2">{row.out || "—"}</td>
+                      <td className="border-b border-slate-100 px-3 py-2 text-xs">{row.lunchBreak || "—"}</td>
                       <td className="border-b border-slate-100 px-3 py-2">{row.total || "—"}</td>
                     </tr>
                   ))}

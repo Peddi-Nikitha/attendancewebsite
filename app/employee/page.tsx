@@ -6,8 +6,8 @@ import { getCurrentUser, logout } from "../../lib/auth";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
-import { CalendarDays, Clock8, Leaf, MapPin, Wallet } from "lucide-react";
-import { useAttendanceToday, useCheckIn, useCheckOut, useEmployeeAttendanceRecords } from "@/lib/firebase/hooks/useAttendance";
+import { CalendarDays, Clock8, Leaf, MapPin, Wallet, UtensilsCrossed } from "lucide-react";
+import { useAttendanceToday, useCheckIn, useCheckOut, useEmployeeAttendanceRecords, useStartLunchBreak, useEndLunchBreak } from "@/lib/firebase/hooks/useAttendance";
 
 const weekdayNamesMonStart = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
 
@@ -28,6 +28,8 @@ export default function EmployeeDashboardPage() {
   const { data: recentRecords } = useEmployeeAttendanceRecords(userId, 14);
   const { mutate: doCheckIn, loading: checkInLoading, error: checkInError } = useCheckIn();
   const { mutate: doCheckOut, loading: checkOutLoading, error: checkOutError } = useCheckOut();
+  const { mutate: doStartLunchBreak, loading: startLunchLoading, error: startLunchError } = useStartLunchBreak();
+  const { mutate: doEndLunchBreak, loading: endLunchLoading, error: endLunchError } = useEndLunchBreak();
   const [timestamp, setTimestamp] = useState<string>("");
   const [runningHours, setRunningHours] = useState<string>("");
   const [nowStr, setNowStr] = useState<string>("");
@@ -81,7 +83,7 @@ export default function EmployeeDashboardPage() {
     }
   }, [data?.checkIn, data?.checkOut]);
 
-  // Live timer - updates every second when checked in
+  // Live timer - updates every second when checked in (excludes lunch break time)
   useEffect(() => {
     if (!checkedIn || !data?.checkIn?.timestamp) {
       setRunningHours("");
@@ -91,8 +93,24 @@ export default function EmployeeDashboardPage() {
       try {
         const inMs = data.checkIn!.timestamp.toMillis();
         const nowMs = Date.now();
-        const hours = (nowMs - inMs) / (1000 * 60 * 60);
-        setRunningHours(hours.toFixed(2));
+        let hours = (nowMs - inMs) / (1000 * 60 * 60);
+        
+        // Subtract lunch break time if it exists
+        if (data.lunchBreak?.start) {
+          const lunchStartMs = data.lunchBreak.start.toMillis();
+          if (data.lunchBreak.end) {
+            // Lunch break has ended, subtract the full duration
+            const lunchEndMs = data.lunchBreak.end.toMillis();
+            const lunchHours = (lunchEndMs - lunchStartMs) / (1000 * 60 * 60);
+            hours -= lunchHours;
+          } else {
+            // Lunch break is still active, subtract time from start to now
+            const lunchHours = (nowMs - lunchStartMs) / (1000 * 60 * 60);
+            hours -= lunchHours;
+          }
+        }
+        
+        setRunningHours(Math.max(0, hours).toFixed(2));
       } catch {
         setRunningHours("");
       }
@@ -100,7 +118,7 @@ export default function EmployeeDashboardPage() {
     calc(); // Calculate immediately
     const id = setInterval(calc, 1000); // Update every second
     return () => clearInterval(id);
-  }, [checkedIn, data?.checkIn?.timestamp]);
+  }, [checkedIn, data?.checkIn?.timestamp, data?.lunchBreak]);
 
   const displayTotal = (() => {
     if (data?.checkOut && data?.checkIn) {
@@ -108,7 +126,16 @@ export default function EmployeeDashboardPage() {
       try {
         const inMs = data.checkIn.timestamp.toMillis();
         const outMs = data.checkOut.timestamp.toMillis();
-        const hours = (outMs - inMs) / (1000 * 60 * 60);
+        let hours = (outMs - inMs) / (1000 * 60 * 60);
+        
+        // Subtract lunch break time if it exists
+        if (data.lunchBreak?.start && data.lunchBreak?.end) {
+          const lunchStartMs = data.lunchBreak.start.toMillis();
+          const lunchEndMs = data.lunchBreak.end.toMillis();
+          const lunchHours = (lunchEndMs - lunchStartMs) / (1000 * 60 * 60);
+          hours -= lunchHours;
+        }
+        
         return Math.max(0, Number(hours.toFixed(2))).toFixed(2);
       } catch {
         return "";
@@ -117,6 +144,9 @@ export default function EmployeeDashboardPage() {
     if (checkedIn && runningHours) return runningHours;
     return "";
   })();
+
+  // Check if lunch break is active
+  const lunchBreakActive = data?.lunchBreak?.start && !data?.lunchBreak?.end;
 
   // Build dynamic weekly hours for current week (Mon -> Sun)
   const weeklyData = useMemo(() => {
@@ -338,9 +368,9 @@ export default function EmployeeDashboardPage() {
                 <span>GPS {gpsOk ? "Captured" : "Not Available"}</span>
               </div>
               
-              {(checkInError || checkOutError) && (
+              {(checkInError || checkOutError || startLunchError || endLunchError) && (
                 <div className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-4 py-3">
-                  {(checkInError || checkOutError)?.message || "An error occurred. Please try again."}
+                  {(checkInError || checkOutError || startLunchError || endLunchError)?.message || "An error occurred. Please try again."}
                 </div>
               )}
               
@@ -360,6 +390,76 @@ export default function EmployeeDashboardPage() {
                 <Clock8 className="mr-2" size={18} />
                 {buttonText}
               </Button>
+              
+              {/* Lunch Break Section - Only show when checked in */}
+              {checkedIn && (
+                <div className="mt-4 pt-4 border-t border-slate-200">
+                  <div className="mb-3">
+                    <h4 className="text-sm font-semibold text-slate-900 mb-1">Lunch Break</h4>
+                    {data?.lunchBreak?.start && (
+                      <div className="text-xs text-slate-600">
+                        Started: {data.lunchBreak.start.toDate().toLocaleTimeString()}
+                        {data.lunchBreak.end && (
+                          <>
+                            <br />
+                            Ended: {data.lunchBreak.end.toDate().toLocaleTimeString()}
+                            {data.lunchBreak.duration && (
+                              <span className="ml-2">• Duration: {data.lunchBreak.duration.toFixed(2)}h</span>
+                            )}
+                          </>
+                        )}
+                        {lunchBreakActive && (
+                          <div className="mt-1 text-amber-600 font-medium">
+                            Lunch break in progress...
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  
+                  {!lunchBreakActive ? (
+                    <Button
+                      className="w-full"
+                      onClick={async (e) => {
+                        e.preventDefault();
+                        if (userId && !startLunchLoading) {
+                          try {
+                            await doStartLunchBreak(userId);
+                          } catch (error) {
+                            console.error("Failed to start lunch break:", error);
+                          }
+                        }
+                      }}
+                      disabled={!userId || startLunchLoading || checkInLoading || checkOutLoading}
+                      type="button"
+                      variant="outline"
+                    >
+                      <UtensilsCrossed className="mr-2" size={16} />
+                      {startLunchLoading ? "Starting..." : "Start Lunch Break"}
+                    </Button>
+                  ) : (
+                    <Button
+                      className="w-full"
+                      onClick={async (e) => {
+                        e.preventDefault();
+                        if (userId && !endLunchLoading) {
+                          try {
+                            await doEndLunchBreak(userId);
+                          } catch (error) {
+                            console.error("Failed to end lunch break:", error);
+                          }
+                        }
+                      }}
+                      disabled={!userId || endLunchLoading || checkInLoading || checkOutLoading}
+                      type="button"
+                      variant="outline"
+                    >
+                      <UtensilsCrossed className="mr-2" size={16} />
+                      {endLunchLoading ? "Ending..." : "End Lunch Break"}
+                    </Button>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </CardContent>
